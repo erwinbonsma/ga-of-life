@@ -8,6 +8,10 @@ pub struct BitGrid {
     units: Vec<u32>
 }
 
+pub struct BitCounter {
+    lookup: Vec<u8>
+}
+
 impl BitGrid {
     pub fn new(width: usize, height: usize) -> Self {
         if width % BITS_PER_UNIT != 0 {
@@ -58,5 +62,58 @@ impl fmt::Display for BitGrid {
         }
 
         Ok(())
+    }
+}
+
+impl BitCounter {
+    fn count_bits(mut val: u8) -> u8 {
+        let mut count = 0;
+        while val != 0 {
+            if val & 1 == 1 {
+                count += 1;
+            }
+            val >>= 1;
+        }
+        count
+    }
+
+    pub fn new() -> Self {
+        let mut lookup = Vec::with_capacity(256);
+        for i in 0..=255 {
+            lookup.push(BitCounter::count_bits(i));
+        }
+
+        BitCounter {
+            lookup
+        }
+    }
+
+    pub fn bits_in_grid(&self, bit_grid: &BitGrid) -> usize {
+        let mut count: usize = 0;
+        for unit in bit_grid.units.iter() {
+            count += self.lookup[(unit & 255) as usize] as usize;
+            count += self.lookup[((unit >> 8) & 255) as usize] as usize;
+            count += self.lookup[((unit >> 16) & 255) as usize] as usize;
+            count += self.lookup[((unit >> 24) & 255) as usize] as usize;
+        }
+        count
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic_bit_count() {
+        let mut g = BitGrid::new(BITS_PER_UNIT * 2, 2);
+        let bc = BitCounter::new();
+
+        g.set(0, 0, true);
+        g.set(15, 0, true);
+        g.set(34, 0, true);
+        g.set(57, 1, true);
+
+        assert_eq!(bc.bits_in_grid(&g), 4);
     }
 }
