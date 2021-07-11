@@ -219,6 +219,9 @@ impl GameOfLife {
 
         self.num_iterations += 1;
 
+        self.restore_right_bits();
+        self.set_border_bits();
+
         // Init row above to Row #0 of grid
         self.rows[row_above][0..self.units_per_row].copy_from_slice(
             &self.bit_grid.units[0..self.units_per_row]
@@ -279,9 +282,6 @@ impl GameOfLife {
             row_currn = row_below;
             row_below = row_tmp;
         }
-
-        self.restore_right_bits();
-        self.set_border_bits();
     }
 
     fn unit_index(&self, x: usize, y: usize) -> usize {
@@ -380,7 +380,7 @@ mod tests {
         }
 
         #[test]
-        fn grid_evolve_block() {
+        fn evolve_block() {
             let mut gol = GameOfLife::new(4, 4, GridBorder::Zeroes);
             let bc = BitCounter::new();
 
@@ -403,7 +403,7 @@ mod tests {
         }
 
         #[test]
-        fn grid_evolve_small_oscillator() {
+        fn evolve_small_oscillator() {
             let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes);
             let bc = BitCounter::new();
 
@@ -423,7 +423,7 @@ mod tests {
         }
 
         #[test]
-        fn grid_evolve_glider() {
+        fn evolve_glider() {
             let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes);
             let bc = BitCounter::new();
 
@@ -449,6 +449,62 @@ mod tests {
             assert!(gol.get(2, 4));
             assert!(gol.get(3, 4));
             assert!(gol.get(4, 4));
+        }
+
+        #[test]
+        fn evolve_toad_across_boundary() {
+            let mut gol = GameOfLife::new(50, 6, GridBorder::Zeroes);
+            let bc = BitCounter::new();
+
+            // Toad pattern:
+            //    * * *
+            //  * * *
+            gol.set(30, 2, true);
+            gol.set(31, 2, true);
+            gol.set(32, 2, true);
+            gol.set(29, 3, true);
+            gol.set(30, 3, true);
+            gol.set(31, 3, true);
+
+            gol.step();
+            gol.step();
+            
+            // Toad should have osillated back to starting position
+            assert_eq!(bc.count_live_cells(&gol), 6);
+            assert!(gol.get(30, 2));
+            assert!(gol.get(31, 2));
+            assert!(gol.get(32, 2));
+            assert!(gol.get(29, 3));
+            assert!(gol.get(30, 3));
+            assert!(gol.get(31, 3));
+        }
+
+        #[test]
+        fn evolve_glider_across_boundary() {
+            let mut gol = GameOfLife::new(50, 6, GridBorder::Zeroes);
+            let bc = BitCounter::new();
+
+            // Glider pattern:
+            //    *
+            //      *
+            //  * * *
+            gol.set(28, 0, true);
+            gol.set(29, 1, true);
+            gol.set(27, 2, true);
+            gol.set(28, 2, true);
+            gol.set(29, 2, true);
+
+            for _ in 0..12 {
+                gol.step();
+            }
+            
+            // Glider should have moved across the boundary
+            assert_eq!(bc.count_live_cells(&gol), 5);
+            assert!(gol.get(31, 3));
+            assert!(gol.get(32, 4));
+            assert!(gol.get(30, 5));
+            assert!(gol.get(31, 5));
+            assert!(gol.get(32, 5));
         }
     }
 }
