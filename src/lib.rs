@@ -12,6 +12,22 @@ pub struct BitCounter {
     lookup: Vec<u8>
 }
 
+const BITS_PER_UNIT_GOL: usize = BITS_PER_UNIT - 1;
+
+pub enum GridBorder {
+    Zeroes,
+    Wraps
+}
+
+pub struct GameOfLife {
+    bit_grid: BitGrid,
+    width: usize,
+    border: GridBorder,
+    units_per_row: usize,
+    num_iterations: usize,
+    rows: [Vec<u32>; 3],
+}
+
 impl BitGrid {
     pub fn new(width: usize, height: usize) -> Self {
         if width % BITS_PER_UNIT != 0 {
@@ -97,6 +113,143 @@ impl BitCounter {
             count += self.lookup[((unit >> 24) & 255) as usize] as usize;
         }
         count
+    }
+}
+
+impl GameOfLife {
+    // The BitGrid used to represent the GameOfLife grid is larger than the latter. It is modified
+    // as follows:
+    // 1) There is an outside border of one cell around the entire grid. This speeds up computation
+    //    as it means that branching can be avoided to handle calculations near the boundaries.
+    // 2) Each unit in the GOL grid contains one fewer (effective) bit than the bit grid (i.e.
+    //    BITS_PER_UNIT_GOL = BITS_PER_UNIT - 1). This is also done to speed up computation. It
+    //    avoids the need to look the next unit column when updating cells _during_ the update
+    //    loop.
+    pub fn new(width: usize, height: usize, border: GridBorder) -> Self {
+        let units_per_row = (width + 2) / BITS_PER_UNIT_GOL;
+
+        GameOfLife {
+            bit_grid: BitGrid::new(units_per_row * BITS_PER_UNIT, height + 2),
+            width,
+            border,
+            units_per_row,
+            num_iterations: 0,
+            rows: [vec![0; units_per_row], vec![0; units_per_row], vec![0; units_per_row]]
+        }
+    }
+
+    fn set_zeroes_border(&mut self) {
+        let units = &mut self.bit_grid.units;
+        units[
+            0..self.units_per_row
+        ].iter_mut().for_each(|x| *x = 0);
+
+        let last_row_start = (self.bit_grid.height - 1) * self.units_per_row;
+        units[
+            last_row_start..last_row_start + self.units_per_row
+        ].iter_mut().for_each(|x| *x = 0);
+
+        let mut unit_index = self.units_per_row;
+        let bit_mask_l = !0x1;
+        let bit_mask_r = !(0x1 << ((self.width + 2) % BITS_PER_UNIT_GOL));
+        for _ in 1..self.bit_grid.height - 1 {
+            units[unit_index] &= bit_mask_l;
+            unit_index += self.units_per_row - 1;
+            units[unit_index] &= bit_mask_r;
+            unit_index += 1;
+        }
+    }
+
+    fn set_wrapping_border(&mut self) {
+        // TODO
+    }
+
+    fn set_border_bits(&mut self) {
+        match &self.border {
+            GridBorder::Zeroes => self.set_zeroes_border(),
+            GridBorder::Wraps => self.set_wrapping_border()
+        }
+    }
+
+    fn restore_right_bits(&mut self) {
+        let units = &mut self.bit_grid.units;
+
+        for unit_index in self.units_per_row..self.units_per_row * (self.bit_grid.height + 1) {
+            units[unit_index] &= !(0x1 << BITS_PER_UNIT_GOL);
+            units[unit_index] |= (units[unit_index + 1] & 0x1) << BITS_PER_UNIT_GOL;
+        }
+    }
+
+    pub fn step(&mut self) {
+        let mut row_above = 0;
+        let mut row_currn = 1;
+        let mut row_below = 2;
+
+        self.num_iterations += 1;
+
+        // Init row above to Row #0 of grid
+        self.rows[row_above][0..self.units_per_row].copy_from_slice(
+            &self.bit_grid.units[0..self.units_per_row]
+        );
+        // Init current row to Row #1 of grid
+        self.rows[row_currn][0..self.units_per_row].copy_from_slice(
+            &self.bit_grid.units[self.units_per_row..self.units_per_row * 2]
+        );
+
+        let mut unit_index = self.units_per_row;
+        for row in 1..self.bit_grid.height - 1 {
+            // Init row below
+            self.rows[row_below][0..self.units_per_row].copy_from_slice(
+                &self.bit_grid.units[self.units_per_row * (row + 1)..self.units_per_row * (row + 2)]
+            );
+
+            // State needed for neighbours at the left (for rightmost cells in current unit column)
+            let mut abc_sum_prev = 0;
+            let mut abc_car_prev = 0;
+
+            for col in 0..self.units_per_row {
+                let above = self.rows[row_above][col];
+                let below = self.rows[row_below][col];
+                let currn = self.rows[row_currn][col];
+
+                // above + below
+                let ab_sum = above ^ below;
+                let ab_car = above & below;
+
+                // above + below + current
+                let abc_sum = currn ^ ab_sum;
+                let abc_car = currn & ab_sum | ab_car;
+
+                // sum of bit0 (sum of sums)
+                let l = abc_sum << 1 | abc_sum_prev >> (BITS_PER_UNIT_GOL - 1);
+                let r = abc_sum >> 1; // Note: cannot include abc_sum_next, so incorrect for
+                                      // rightmost bit.
+                let lr = l ^ r;
+                let sum0 = lr ^ ab_sum;
+                let car0 = l & r | lr & ab_sum;
+
+                // sum of bit1 (sum of carry's)
+                let l = abc_car << 1 | abc_car_prev >> (BITS_PER_UNIT_GOL - 1);
+                let r = abc_car >> 1;
+                let lr = l ^ r;
+                let sum1 = lr ^ ab_car;
+                let car1 = l & r | lr & ab_car;
+
+                self.bit_grid.units[unit_index] = (currn | sum0) & (car0 ^ sum1) & !car1;
+                unit_index += 1;
+
+                abc_sum_prev = abc_sum;
+                abc_car_prev = abc_car;
+            }
+
+            let row_tmp = row_above;
+            row_above = row_currn;
+            row_currn = row_below;
+            row_below = row_tmp;
+        }
+
+        self.restore_right_bits();
+        self.set_border_bits();
     }
 }
 
