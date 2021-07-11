@@ -109,7 +109,7 @@ impl BitCounter {
         }
     }
 
-    pub fn bits_in_grid(&self, bit_grid: &BitGrid) -> usize {
+    pub fn count_set_bits(&self, bit_grid: &BitGrid) -> usize {
         let mut count: usize = 0;
         for unit in bit_grid.units.iter() {
             count += self.lookup[(unit & 255) as usize] as usize;
@@ -120,7 +120,7 @@ impl BitCounter {
         count
     }
 
-    pub fn bits_in_game_of_life(&self, gol: &GameOfLife) -> usize {
+    pub fn count_live_cells(&self, gol: &GameOfLife) -> usize {
         let mut count: usize = 0;
         let mut i = 0;
         for unit in gol.bit_grid.units[
@@ -320,61 +320,65 @@ mod tests {
         g.set(34, 0, true);
         g.set(57, 1, true);
 
-        assert_eq!(bc.bits_in_grid(&g), 4);
-    }
-
-    #[test]
-    fn gol_all_ones_bit_count() {
-        let w = 58;
-        let h = 2;
-        let mut gol = GameOfLife::new(w, h, GridBorder::Zeroes);
-        let bc = BitCounter::new();
-
-        gol.bit_grid.toggle_all();
-
-        assert_eq!(bc.bits_in_game_of_life(&gol), w * h);
-    }
-
-    #[test]
-    fn game_of_life_grid_init() {
-        let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes);
-        let bc = BitCounter::new();
-
-        gol.set(1, 2, true);
-        gol.set(2, 2, true);
-        gol.set(3, 2, true);
-
-        assert_eq!(bc.bits_in_grid(&gol.bit_grid), 3);
-        assert_eq!(bc.bits_in_game_of_life(&gol), 3);
+        assert_eq!(bc.count_set_bits(&g), 4);
     }
 
     #[test]
     fn grid_invert() {
-        let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes);
+        let mut bit_grid = BitGrid::new(32, 3);
         let bc = BitCounter::new();
 
-        gol.bit_grid.toggle_all();
-        assert_eq!(bc.bits_in_grid(&gol.bit_grid), 7 * BITS_PER_UNIT);
+        bit_grid.toggle_all();
+        assert_eq!(bc.count_set_bits(&bit_grid), 32 * 3);
     }
 
-    #[test]
-    fn zeroes_border() {
-        let w = 7;
-        let h = 3;
-        let mut gol = GameOfLife::new(w, h, GridBorder::Zeroes);
-        let bc = BitCounter::new();
+    mod game_of_life {
+        use super::super::*;
 
-        gol.bit_grid.toggle_all();
-        let num_bits = bc.bits_in_grid(&gol.bit_grid);
-        gol.set_border_bits();
+        #[test]
+        fn count_cells_all_ones() {
+            let w = 58;
+            let h = 2;
+            let mut gol = GameOfLife::new(w, h, GridBorder::Zeroes);
+            let bc = BitCounter::new();
 
-        println!("{}", gol.bit_grid);
-        
-        // All cells in actual grid should still be set
-        assert_eq!(bc.bits_in_game_of_life(&gol), w * h);
+            gol.bit_grid.toggle_all();
 
-        // At least all border cells should be cleared
-        // Note: the implementation may clear more cells, outside the actual grid
-        assert!(bc.bits_in_grid(&gol.bit_grid) <= (num_bits - 2 * (w + h) - 4));
+            assert_eq!(bc.count_live_cells(&gol), w * h);
+        }
+
+        #[test]
+        fn grid_init() {
+            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes);
+            let bc = BitCounter::new();
+
+            gol.set(1, 2, true);
+            gol.set(2, 2, true);
+            gol.set(3, 2, true);
+
+            assert_eq!(bc.count_set_bits(&gol.bit_grid), 3);
+            assert_eq!(bc.count_live_cells(&gol), 3);
+        }
+
+        #[test]
+        fn zeroes_border() {
+            let w = 7;
+            let h = 3;
+            let mut gol = GameOfLife::new(w, h, GridBorder::Zeroes);
+            let bc = BitCounter::new();
+
+            gol.bit_grid.toggle_all();
+            let num_bits = bc.count_set_bits(&gol.bit_grid);
+            gol.set_border_bits();
+
+            println!("{}", gol.bit_grid);
+            
+            // All cells in actual grid should still be set
+            assert_eq!(bc.count_live_cells(&gol), w * h);
+
+            // At least all border cells should be cleared
+            // Note: the implementation may clear more cells, outside the actual grid
+            assert!(bc.count_set_bits(&gol.bit_grid) <= (num_bits - 2 * (w + h) - 4));
+        }
     }
 }
