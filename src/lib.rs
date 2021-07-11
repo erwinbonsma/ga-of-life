@@ -206,7 +206,7 @@ impl GameOfLife {
     fn restore_right_bits(&mut self) {
         let units = &mut self.bit_grid.units;
 
-        for unit_index in self.units_per_row..self.units_per_row * (self.bit_grid.height + 1) {
+        for unit_index in self.units_per_row..self.units_per_row * (self.height + 1) {
             units[unit_index] &= !(0x1 << BITS_PER_UNIT_GOL);
             units[unit_index] |= (units[unit_index + 1] & 0x1) << BITS_PER_UNIT_GOL;
         }
@@ -371,14 +371,84 @@ mod tests {
             let num_bits = bc.count_set_bits(&gol.bit_grid);
             gol.set_border_bits();
 
-            println!("{}", gol.bit_grid);
-            
             // All cells in actual grid should still be set
             assert_eq!(bc.count_live_cells(&gol), w * h);
 
             // At least all border cells should be cleared
             // Note: the implementation may clear more cells, outside the actual grid
             assert!(bc.count_set_bits(&gol.bit_grid) <= (num_bits - 2 * (w + h) - 4));
+        }
+
+        #[test]
+        fn grid_evolve_block() {
+            let mut gol = GameOfLife::new(4, 4, GridBorder::Zeroes);
+            let bc = BitCounter::new();
+
+            // Pattern:
+            //  * *
+            //  * *
+            gol.set(1, 1, true);
+            gol.set(2, 1, true);
+            gol.set(2, 1, true);
+            gol.set(2, 2, true);
+
+            gol.step();
+            
+            // Pattern should remain unchanged.
+            assert_eq!(bc.count_live_cells(&gol), 4);
+            assert!(gol.get(1, 1));
+            assert!(gol.get(2, 1));
+            assert!(gol.get(2, 1));
+            assert!(gol.get(2, 2));
+        }
+
+        #[test]
+        fn grid_evolve_small_oscillator() {
+            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes);
+            let bc = BitCounter::new();
+
+            // Blinker pattern:
+            //   * * *
+            gol.set(1, 2, true);
+            gol.set(2, 2, true);
+            gol.set(3, 2, true);
+
+            gol.step();
+
+            // Pattern should have flipped to vertical orientation
+            assert_eq!(bc.count_live_cells(&gol), 3);
+            assert!(gol.get(2, 1));
+            assert!(gol.get(2, 2));
+            assert!(gol.get(2, 3));
+        }
+
+        #[test]
+        fn grid_evolve_glider() {
+            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes);
+            let bc = BitCounter::new();
+
+            // Glider pattern:
+            //    *
+            //      *
+            //  * * *
+            gol.set(2, 1, true);
+            gol.set(3, 2, true);
+            gol.set(1, 3, true);
+            gol.set(2, 3, true);
+            gol.set(3, 3, true);
+
+            gol.step();
+            gol.step();
+            gol.step();
+            gol.step();
+            
+            // Glider should have moved right and down one unit
+            assert_eq!(bc.count_live_cells(&gol), 5);
+            assert!(gol.get(3, 2));
+            assert!(gol.get(4, 3));
+            assert!(gol.get(2, 4));
+            assert!(gol.get(3, 4));
+            assert!(gol.get(4, 4));
         }
     }
 }
