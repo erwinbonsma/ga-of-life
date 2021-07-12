@@ -16,7 +16,7 @@ const BITS_PER_UNIT_GOL: usize = BITS_PER_UNIT - 1;
 
 pub enum GridBorder {
     Zeroes,
-    Wraps
+    Wrapped
 }
 
 pub struct GameOfLife {
@@ -192,14 +192,42 @@ impl GameOfLife {
         }
     }
 
-    fn set_wrapping_border(&mut self) {
-        // TODO
+    fn set_wrapped_border(&mut self) {
+        let units = &mut self.bit_grid.units;
+
+        let mut unit_index_l = self.units_per_row;
+        let mut unit_index_r = self.units_per_row * 2 - 1;
+        let bit_pos_l_dst = 0;
+        let bit_pos_l_src = 1;
+        let bit_pos_r_dst = (self.width + 1) % BITS_PER_UNIT_GOL;
+        let bit_pos_r_src = bit_pos_r_dst - 1;
+        assert_ne!(bit_pos_r_dst, 0);
+
+        // Wrap left/right boundary columns
+        for _ in 1..self.bit_grid.height - 1 {
+            // Clear existing bit first
+            units[unit_index_l] &= !(0x1 << bit_pos_l_dst);
+            units[unit_index_r] &= !(0x1 << bit_pos_r_dst);
+
+            // Copy wrapped bit
+            units[unit_index_l] |= (units[unit_index_r] & (0x1 << bit_pos_r_src)) >> (bit_pos_r_src - bit_pos_l_dst);
+            units[unit_index_r] |= (units[unit_index_l] & (0x1 << bit_pos_l_src)) << (bit_pos_r_dst - bit_pos_l_src); 
+            
+            unit_index_l += self.units_per_row;
+            unit_index_r += self.units_per_row;
+        }
+
+        // Wrap top/bottom boundary rows
+        let (first_row, rest) = units.split_at_mut(self.units_per_row);
+        let (body, last_row) = rest.split_at_mut(self.units_per_row * self.height);
+        first_row.copy_from_slice(&body[self.units_per_row * (self.height - 1)..]);
+        last_row.copy_from_slice(&body[..self.units_per_row]);
     }
 
     fn set_border_bits(&mut self) {
         match &self.border {
             GridBorder::Zeroes => self.set_zeroes_border(),
-            GridBorder::Wraps => self.set_wrapping_border()
+            GridBorder::Wrapped => self.set_wrapped_border()
         }
     }
 
@@ -377,6 +405,34 @@ mod tests {
             // At least all border cells should be cleared
             // Note: the implementation may clear more cells, outside the actual grid
             assert!(bc.count_set_bits(&gol.bit_grid) <= (num_bits - 2 * (w + h) - 4));
+        }
+
+        #[test]
+        fn wrapped_border() {
+            let w = 7;
+            let h = 7;
+            let mut gol = GameOfLife::new(w, h, GridBorder::Wrapped);
+
+            gol.set(0, 0, true); // Corner
+            gol.set(3, 0, true); // Top row
+            gol.set(4, h - 1, true); // Bottom row
+            gol.set(0, 2, true); // Left column
+            gol.set(w - 1, 5, true); // Right column
+            gol.set_border_bits();
+
+            let bc = BitCounter::new();
+            assert_eq!(bc.count_set_bits(&gol.bit_grid), 5 + 4 + 3);
+
+            // Corner
+            assert!(gol.bit_grid.get(1, h + 1));
+            assert!(gol.bit_grid.get(w + 1, 1));
+            assert!(gol.bit_grid.get(w + 1, h + 1));
+
+            // Other points
+            assert!(gol.bit_grid.get(4, h + 1));
+            assert!(gol.bit_grid.get(5, 0));
+            assert!(gol.bit_grid.get(w + 1, 3));
+            assert!(gol.bit_grid.get(0, 6));
         }
 
         #[test]
