@@ -397,6 +397,7 @@ mod tests {
             assert_eq!(bc.count_live_cells(&gol), 3);
         }
 
+        #[test]
         fn grid_init_fails() {
             let gol_result = GameOfLife::new(62, 3, GridBorder::Wrapped);
 
