@@ -14,6 +14,7 @@ pub struct BitCounter {
 
 const BITS_PER_UNIT_GOL: usize = BITS_PER_UNIT - 1;
 
+#[derive(PartialEq)]
 pub enum GridBorder {
     Zeroes,
     Wrapped
@@ -156,10 +157,18 @@ impl GameOfLife {
     //    BITS_PER_UNIT_GOL = BITS_PER_UNIT - 1). This is also done to speed up computation. It
     //    avoids the need to look the next unit column when updating cells _during_ the update
     //    loop.
-    pub fn new(width: usize, height: usize, border: GridBorder) -> Self {
+    pub fn new(width: usize, height: usize, border: GridBorder) -> Result<Self, String> {
         let units_per_row = (width + 2 + (BITS_PER_UNIT_GOL - 1)) / BITS_PER_UNIT_GOL;
 
-        GameOfLife {
+        if width < 3 || height < 3 {
+            return Err("Size too small".to_string());
+        }
+
+        if border == GridBorder::Wrapped && width % 31 == 0 {
+            return Err("Width cannot be a multiple of 31 when border is wrapped".to_string());
+        }
+
+        Ok(GameOfLife {
             bit_grid: BitGrid::new(units_per_row * BITS_PER_UNIT, height + 2),
             width,
             height,
@@ -167,7 +176,7 @@ impl GameOfLife {
             units_per_row,
             num_iterations: 0,
             rows: [vec![0; units_per_row], vec![0; units_per_row], vec![0; units_per_row]]
-        }
+        })
     }
 
     fn set_zeroes_border(&mut self) {
@@ -366,8 +375,8 @@ mod tests {
         #[test]
         fn count_cells_all_ones() {
             let w = 58;
-            let h = 2;
-            let mut gol = GameOfLife::new(w, h, GridBorder::Zeroes);
+            let h = 3;
+            let mut gol = GameOfLife::new(w, h, GridBorder::Zeroes).unwrap();
             let bc = BitCounter::new();
 
             gol.bit_grid.toggle_all();
@@ -377,7 +386,7 @@ mod tests {
 
         #[test]
         fn grid_init() {
-            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes);
+            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes).unwrap();
             let bc = BitCounter::new();
 
             gol.set(1, 2, true);
@@ -388,11 +397,17 @@ mod tests {
             assert_eq!(bc.count_live_cells(&gol), 3);
         }
 
+        fn grid_init_fails() {
+            let gol_result = GameOfLife::new(62, 3, GridBorder::Wrapped);
+
+            assert!(gol_result.is_err());
+        }
+
         #[test]
         fn zeroes_border() {
             let w = 7;
             let h = 3;
-            let mut gol = GameOfLife::new(w, h, GridBorder::Zeroes);
+            let mut gol = GameOfLife::new(w, h, GridBorder::Zeroes).unwrap();
             let bc = BitCounter::new();
 
             gol.bit_grid.toggle_all();
@@ -411,7 +426,7 @@ mod tests {
         fn wrapped_border() {
             let w = 7;
             let h = 7;
-            let mut gol = GameOfLife::new(w, h, GridBorder::Wrapped);
+            let mut gol = GameOfLife::new(w, h, GridBorder::Wrapped).unwrap();
 
             gol.set(0, 0, true); // Corner
             gol.set(3, 0, true); // Top row
@@ -437,7 +452,7 @@ mod tests {
 
         #[test]
         fn evolve_block() {
-            let mut gol = GameOfLife::new(4, 4, GridBorder::Zeroes);
+            let mut gol = GameOfLife::new(4, 4, GridBorder::Zeroes).unwrap();
             let bc = BitCounter::new();
 
             // Pattern:
@@ -460,7 +475,7 @@ mod tests {
 
         #[test]
         fn evolve_small_oscillator() {
-            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes);
+            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes).unwrap();
             let bc = BitCounter::new();
 
             // Blinker pattern:
@@ -480,7 +495,7 @@ mod tests {
 
         #[test]
         fn evolve_glider() {
-            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes);
+            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes).unwrap();
             let bc = BitCounter::new();
 
             // Glider pattern:
@@ -509,7 +524,7 @@ mod tests {
 
         #[test]
         fn evolve_toad_across_boundary() {
-            let mut gol = GameOfLife::new(50, 6, GridBorder::Zeroes);
+            let mut gol = GameOfLife::new(50, 6, GridBorder::Zeroes).unwrap();
             let bc = BitCounter::new();
 
             // Toad pattern:
@@ -537,7 +552,7 @@ mod tests {
 
         #[test]
         fn evolve_glider_across_boundary() {
-            let mut gol = GameOfLife::new(50, 6, GridBorder::Zeroes);
+            let mut gol = GameOfLife::new(50, 6, GridBorder::Zeroes).unwrap();
             let bc = BitCounter::new();
 
             // Glider pattern:
@@ -565,7 +580,7 @@ mod tests {
 
         #[test]
         fn evolve_glider_across_wrapped_border() {
-            let mut gol = GameOfLife::new(5, 5, GridBorder::Wrapped);
+            let mut gol = GameOfLife::new(5, 5, GridBorder::Wrapped).unwrap();
             let bc = BitCounter::new();
 
             // Glider pattern:
