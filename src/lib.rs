@@ -562,5 +562,33 @@ mod tests {
             assert!(gol.get(31, 5));
             assert!(gol.get(32, 5));
         }
+
+        #[test]
+        fn evolve_glider_across_wrapped_border() {
+            let mut gol = GameOfLife::new(5, 5, GridBorder::Wrapped);
+            let bc = BitCounter::new();
+
+            // Glider pattern:
+            //    *
+            //      *
+            //  * * *
+            gol.set(2, 1, true);
+            gol.set(3, 2, true);
+            gol.set(1, 3, true);
+            gol.set(2, 3, true);
+            gol.set(3, 3, true);
+
+            for _ in 0..20 {
+                gol.step();
+            }
+            
+            // Glider should have moved back to its starting position
+            assert_eq!(bc.count_live_cells(&gol), 5);
+            assert!(gol.get(2, 1));
+            assert!(gol.get(3, 2));
+            assert!(gol.get(1, 3));
+            assert!(gol.get(2, 3));
+            assert!(gol.get(3, 3));
+        }
     }
 }
