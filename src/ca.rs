@@ -1,4 +1,5 @@
 use std::fmt;
+use core::cmp::max;
 use wasm_bindgen::prelude::*;
 
 const BITS_PER_UNIT: usize = 32;
@@ -10,7 +11,6 @@ pub struct BitGrid {
     units: Vec<u32>
 }
 
-#[wasm_bindgen]
 pub struct BitCounter {
     lookup: Vec<u8>
 }
@@ -30,8 +30,29 @@ pub struct GameOfLife {
     height: usize,
     border: GridBorder,
     units_per_row: usize,
-    num_iterations: usize,
+    num_steps: usize,
     rows: [Vec<u32>; 3],
+}
+
+#[wasm_bindgen]
+pub struct GameOfLifeRunner {
+    // The minimum amount of absolute steps that the CA is allowed to be dormant, i.e. the total
+    // number of steps that have passed since the maximum number of cells was reached. The CA will
+    // never be terminated before this amount of passed.
+    min_absolute_dormancy: usize,
+
+    // The minimum relative number of steps that the CA is allowed to be dormant since the
+    // maximum was reached. When this maximum was reached at time T, the CA will at least
+    // run until time t >= T * (1 + min_relative_dormancy)
+    min_relative_dormancy: f32,
+
+    bit_counter: BitCounter,
+}
+
+#[wasm_bindgen]
+pub struct RunStats {
+    pub max_cells: usize,
+    pub max_cells_steps: usize,
 }
 
 impl BitGrid {
@@ -91,7 +112,6 @@ impl fmt::Display for BitGrid {
     }
 }
 
-#[wasm_bindgen]
 impl BitCounter {
     fn count_bits(mut val: u8) -> u8 {
         let mut count = 0;
@@ -104,7 +124,6 @@ impl BitCounter {
         count
     }
 
-    #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         let mut lookup = Vec::with_capacity(256);
         for i in 0..=255 {
@@ -181,7 +200,7 @@ impl GameOfLife {
             height,
             border,
             units_per_row,
-            num_iterations: 0,
+            num_steps: 0,
             rows: [vec![0; units_per_row], vec![0; units_per_row], vec![0; units_per_row]]
         })
     }
@@ -209,6 +228,10 @@ impl GameOfLife {
 
     pub fn height(&self) -> usize {
         self.height
+    }
+
+    pub fn num_steps(&self) -> usize {
+        self.num_steps
     }
 
     fn set_zeroes_border(&mut self) {
@@ -286,7 +309,7 @@ impl GameOfLife {
         let mut row_currn = 1;
         let mut row_below = 2;
 
-        self.num_iterations += 1;
+        self.num_steps += 1;
 
         self.restore_right_bits();
         self.set_border_bits();
@@ -375,6 +398,49 @@ impl GameOfLife {
     }
 }
 
+#[wasm_bindgen]
+impl GameOfLifeRunner {
+
+    #[wasm_bindgen(constructor)]
+    pub fn new(min_absolute_dormancy: usize, min_relative_dormancy: f32) -> Self {
+        GameOfLifeRunner {
+            min_absolute_dormancy,
+            min_relative_dormancy,
+            bit_counter: BitCounter::new(),
+        }
+    }
+
+    fn max_steps(&self, max_cells_steps: usize) -> usize {
+        let rel_limit = max_cells_steps + self.min_absolute_dormancy;
+        let abs_limit = (max_cells_steps as f32 * (1.0 + self.min_relative_dormancy)) as usize;
+
+        max(rel_limit, abs_limit)
+    }
+
+    pub fn run(&self, gol: &mut GameOfLife) -> RunStats {
+        let mut max_cells = self.bit_counter.count_live_cells(gol);
+        let mut max_cells_steps = 0;
+        let mut max_steps = self.max_steps(0);
+
+        loop {
+            gol.step();
+
+            let num_cells = self.bit_counter.count_live_cells(gol);
+
+            if num_cells > max_cells {
+                max_cells = num_cells;
+                max_cells_steps = gol.num_steps();
+                max_steps = self.max_steps(max_cells_steps);
+            } if gol.num_steps() >= max_steps {
+                return RunStats {
+                    max_cells,
+                    max_cells_steps,
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -404,11 +470,23 @@ mod tests {
     mod game_of_life {
         use super::super::*;
 
+        fn add_glider(gol: &mut GameOfLife, x: usize, y: usize) {
+            // Glider pattern:
+            //    *
+            //      *
+            //  * * *
+            gol.set(1 + x, 0 + y, true);
+            gol.set(2 + x, 1 + y, true);
+            gol.set(0 + x, 2 + y, true);
+            gol.set(1 + x, 2 + y, true);
+            gol.set(2 + x, 2 + y, true);
+        }
+
         #[test]
         fn count_cells_all_ones() {
             let w = 58;
             let h = 3;
-            let mut gol = GameOfLife::new(w, h, GridBorder::Zeroes).unwrap();
+            let mut gol = GameOfLife::new(w, h);
             let bc = BitCounter::new();
 
             gol.bit_grid.toggle_all();
@@ -418,7 +496,7 @@ mod tests {
 
         #[test]
         fn grid_init() {
-            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes).unwrap();
+            let mut gol = GameOfLife::new(5, 5);
             let bc = BitCounter::new();
 
             gol.set(1, 2, true);
@@ -431,7 +509,7 @@ mod tests {
 
         #[test]
         fn grid_init_fails() {
-            let gol_result = GameOfLife::new(62, 3, GridBorder::Wrapped);
+            let gol_result = GameOfLife::new_result(62, 3, GridBorder::Wrapped);
 
             assert!(gol_result.is_err());
         }
@@ -440,7 +518,7 @@ mod tests {
         fn zeroes_border() {
             let w = 7;
             let h = 3;
-            let mut gol = GameOfLife::new(w, h, GridBorder::Zeroes).unwrap();
+            let mut gol = GameOfLife::new_result(w, h, GridBorder::Zeroes).unwrap();
             let bc = BitCounter::new();
 
             gol.bit_grid.toggle_all();
@@ -459,7 +537,7 @@ mod tests {
         fn wrapped_border() {
             let w = 7;
             let h = 7;
-            let mut gol = GameOfLife::new(w, h, GridBorder::Wrapped).unwrap();
+            let mut gol = GameOfLife::new(w, h);
 
             gol.set(0, 0, true); // Corner
             gol.set(3, 0, true); // Top row
@@ -485,7 +563,7 @@ mod tests {
 
         #[test]
         fn evolve_block() {
-            let mut gol = GameOfLife::new(4, 4, GridBorder::Zeroes).unwrap();
+            let mut gol = GameOfLife::new(4, 4);
             let bc = BitCounter::new();
 
             // Pattern:
@@ -508,7 +586,7 @@ mod tests {
 
         #[test]
         fn evolve_small_oscillator() {
-            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes).unwrap();
+            let mut gol = GameOfLife::new(5, 5);
             let bc = BitCounter::new();
 
             // Blinker pattern:
@@ -528,18 +606,10 @@ mod tests {
 
         #[test]
         fn evolve_glider() {
-            let mut gol = GameOfLife::new(5, 5, GridBorder::Zeroes).unwrap();
+            let mut gol = GameOfLife::new(5, 5);
             let bc = BitCounter::new();
 
-            // Glider pattern:
-            //    *
-            //      *
-            //  * * *
-            gol.set(2, 1, true);
-            gol.set(3, 2, true);
-            gol.set(1, 3, true);
-            gol.set(2, 3, true);
-            gol.set(3, 3, true);
+            add_glider(&mut gol, 1, 1);
 
             gol.step();
             gol.step();
@@ -557,7 +627,7 @@ mod tests {
 
         #[test]
         fn evolve_toad_across_boundary() {
-            let mut gol = GameOfLife::new(50, 6, GridBorder::Zeroes).unwrap();
+            let mut gol = GameOfLife::new(50, 6);
             let bc = BitCounter::new();
 
             // Toad pattern:
@@ -585,18 +655,10 @@ mod tests {
 
         #[test]
         fn evolve_glider_across_boundary() {
-            let mut gol = GameOfLife::new(50, 6, GridBorder::Zeroes).unwrap();
+            let mut gol = GameOfLife::new(50, 6);
             let bc = BitCounter::new();
 
-            // Glider pattern:
-            //    *
-            //      *
-            //  * * *
-            gol.set(28, 0, true);
-            gol.set(29, 1, true);
-            gol.set(27, 2, true);
-            gol.set(28, 2, true);
-            gol.set(29, 2, true);
+            add_glider(&mut gol, 27, 0);
 
             for _ in 0..12 {
                 gol.step();
@@ -613,18 +675,10 @@ mod tests {
 
         #[test]
         fn evolve_glider_across_wrapped_border() {
-            let mut gol = GameOfLife::new(5, 5, GridBorder::Wrapped).unwrap();
+            let mut gol = GameOfLife::new(5, 5);
             let bc = BitCounter::new();
 
-            // Glider pattern:
-            //    *
-            //      *
-            //  * * *
-            gol.set(2, 1, true);
-            gol.set(3, 2, true);
-            gol.set(1, 3, true);
-            gol.set(2, 3, true);
-            gol.set(3, 3, true);
+            add_glider(&mut gol, 1, 1);
 
             for _ in 0..20 {
                 gol.step();
@@ -637,6 +691,39 @@ mod tests {
             assert!(gol.get(1, 3));
             assert!(gol.get(2, 3));
             assert!(gol.get(3, 3));
+        }
+
+        #[test]
+        fn glider_termination() {
+            let mut gol = GameOfLife::new(5, 5);
+            let runner = GameOfLifeRunner::new(20, 2.0);
+
+            add_glider(&mut gol, 1, 1);
+
+            let stats = runner.run(&mut gol);
+
+            assert_eq!(stats.max_cells, 5);
+            assert_eq!(stats.max_cells_steps, 0);
+        }
+
+        #[test]
+        fn penta_decathlon_termination() {
+            let mut gol = GameOfLife::new(20, 15);
+            let runner = GameOfLifeRunner::new(20, 2.0);
+
+            for i in 5..15 {
+                if i == 7 || i == 12 {
+                    gol.set(6, i, true);
+                    gol.set(8, i, true);
+                } else {
+                    gol.set(7, i, true);
+                }
+            }
+
+            let stats = runner.run(&mut gol);
+
+            assert_eq!(stats.max_cells, 40);
+            assert!(stats.max_cells_steps < 15);
         }
     }
 }
