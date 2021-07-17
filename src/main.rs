@@ -1,4 +1,4 @@
-use ga_of_life::{BitGrid};
+use ga_of_life::ca::{BitGrid};
 
 fn main() {
     let mut bit_grid = BitGrid::new(32, 4);
