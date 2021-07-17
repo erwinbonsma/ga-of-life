@@ -3,12 +3,14 @@ use wasm_bindgen::prelude::*;
 
 const BITS_PER_UNIT: usize = 32;
 
+#[wasm_bindgen]
 pub struct BitGrid {
     width: usize,
     height: usize,
     units: Vec<u32>
 }
 
+#[wasm_bindgen]
 pub struct BitCounter {
     lookup: Vec<u8>
 }
@@ -89,6 +91,7 @@ impl fmt::Display for BitGrid {
     }
 }
 
+#[wasm_bindgen]
 impl BitCounter {
     fn count_bits(mut val: u8) -> u8 {
         let mut count = 0;
@@ -101,6 +104,7 @@ impl BitCounter {
         count
     }
 
+    #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         let mut lookup = Vec::with_capacity(256);
         for i in 0..=255 {
@@ -195,7 +199,7 @@ impl GameOfLife {
     //    avoids the need to look the next unit column when updating cells _during_ the update
     //    loop.
     #[wasm_bindgen(constructor)]
-    pub fn new(width: usize, height: usize) -> GameOfLife {
+    pub fn new(width: usize, height: usize) -> Self {
         GameOfLife::new_result(width, height, GridBorder::Wrapped).unwrap()
     }
 

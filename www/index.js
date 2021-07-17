@@ -1,4 +1,4 @@
-import { GameOfLife } from "ga-of-life";
+import { GameOfLife, BitCounter } from "ga-of-life";
 
 const CELL_SIZE = 5; // px
 const GRID_COLOR = "#CCCCCC";
@@ -8,6 +8,7 @@ const ALIVE_COLOR = "#000000";
 const universe = new GameOfLife(64, 64);
 const width = universe.width();
 const height = universe.height();
+const bitCounter = new BitCounter();
 
 // Glider
 universe.set(1, 0, true);
@@ -22,11 +23,14 @@ canvas.width = (CELL_SIZE + 1) * width + 1;
 
 const ctx = canvas.getContext('2d');
 
+const infoElement = document.getElementById("game-of-life-info");
+
 function renderLoop() {
   universe.step();
 
   //drawGrid();
   drawCells();
+  infoElement.textContent = `#cells = ${bitCounter.count_live_cells(universe)}`;
 
   requestAnimationFrame(renderLoop);
 };
