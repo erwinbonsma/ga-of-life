@@ -1,4 +1,5 @@
 use std::fmt;
+use wasm_bindgen::prelude::*;
 
 const BITS_PER_UNIT: usize = 32;
 
@@ -14,12 +15,14 @@ pub struct BitCounter {
 
 const BITS_PER_UNIT_GOL: usize = BITS_PER_UNIT - 1;
 
+#[wasm_bindgen]
 #[derive(PartialEq)]
 pub enum GridBorder {
     Zeroes,
     Wrapped
 }
 
+#[wasm_bindgen]
 pub struct GameOfLife {
     bit_grid: BitGrid,
     width: usize,
@@ -148,6 +151,7 @@ impl BitCounter {
     }
 }
 
+// Public implementation for GameOfLife that is excluded from WASM interface
 impl GameOfLife {
     // The BitGrid used to represent the GameOfLife grid is larger than the latter. It is modified
     // as follows:
@@ -157,7 +161,7 @@ impl GameOfLife {
     //    BITS_PER_UNIT_GOL = BITS_PER_UNIT - 1). This is also done to speed up computation. It
     //    avoids the need to look the next unit column when updating cells _during_ the update
     //    loop.
-    pub fn new(width: usize, height: usize, border: GridBorder) -> Result<Self, String> {
+    pub fn new_result(width: usize, height: usize, border: GridBorder) -> Result<Self, String> {
         let units_per_row = (width + 2 + (BITS_PER_UNIT_GOL - 1)) / BITS_PER_UNIT_GOL;
 
         if width < 3 || height < 3 {
@@ -177,6 +181,31 @@ impl GameOfLife {
             num_iterations: 0,
             rows: [vec![0; units_per_row], vec![0; units_per_row], vec![0; units_per_row]]
         })
+    }
+}
+
+#[wasm_bindgen]
+impl GameOfLife {
+
+    // The BitGrid used to represent the GameOfLife grid is larger than the latter. It is modified
+    // as follows:
+    // 1) There is an outside border of one cell around the entire grid. This speeds up computation
+    //    as it means that branching can be avoided to handle calculations near the boundaries.
+    // 2) Each unit in the GOL grid contains one fewer (effective) bit than the bit grid (i.e.
+    //    BITS_PER_UNIT_GOL = BITS_PER_UNIT - 1). This is also done to speed up computation. It
+    //    avoids the need to look the next unit column when updating cells _during_ the update
+    //    loop.
+    #[wasm_bindgen(constructor)]
+    pub fn new(width: usize, height: usize, border: GridBorder) -> GameOfLife {
+        GameOfLife::new_result(width, height, border).unwrap()
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
     }
 
     fn set_zeroes_border(&mut self) {
