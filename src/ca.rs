@@ -15,7 +15,6 @@ pub struct BitCounter {
 
 const BITS_PER_UNIT_GOL: usize = BITS_PER_UNIT - 1;
 
-#[wasm_bindgen]
 #[derive(PartialEq)]
 pub enum GridBorder {
     Zeroes,
@@ -196,8 +195,8 @@ impl GameOfLife {
     //    avoids the need to look the next unit column when updating cells _during_ the update
     //    loop.
     #[wasm_bindgen(constructor)]
-    pub fn new(width: usize, height: usize, border: GridBorder) -> GameOfLife {
-        GameOfLife::new_result(width, height, border).unwrap()
+    pub fn new(width: usize, height: usize) -> GameOfLife {
+        GameOfLife::new_result(width, height, GridBorder::Wrapped).unwrap()
     }
 
     pub fn width(&self) -> usize {
