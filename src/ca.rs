@@ -8,6 +8,7 @@ const BITS_PER_UNIT: usize = 32;
 pub struct BitGrid {
     width: usize,
     height: usize,
+    units_per_row: usize,
     units: Vec<u32>
 }
 
@@ -57,18 +58,20 @@ pub struct RunStats {
 
 impl BitGrid {
     pub fn new(width: usize, height: usize) -> Self {
-        if width % BITS_PER_UNIT != 0 {
-            panic!("Width should be a multiple of {}", BITS_PER_UNIT);
-        }
+        let extra_bits = width % BITS_PER_UNIT;
+        let bits_per_row = if extra_bits > 0 { width + BITS_PER_UNIT - extra_bits } else { width };
+        let units_per_row = bits_per_row / BITS_PER_UNIT;
+
         BitGrid {
             width,
             height,
-            units: vec![0; height * width / BITS_PER_UNIT]
+            units_per_row,
+            units: vec![0; height * units_per_row]
         }
     }
 
     fn unit_index(&self, x: usize, y: usize) -> usize {
-        (x / BITS_PER_UNIT) + (self.width / BITS_PER_UNIT) * y
+        (x / BITS_PER_UNIT) + self.units_per_row * y
     }
 
     pub fn width(&self) -> usize { 
@@ -91,6 +94,10 @@ impl BitGrid {
         } else {
             self.units[index] = self.units[index] & !(1 << bitpos);
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.units.iter_mut().for_each(|x| *x = 0);
     }
 
     pub fn toggle_all(&mut self) {
@@ -232,6 +239,11 @@ impl GameOfLife {
 
     pub fn num_steps(&self) -> usize {
         self.num_steps
+    }
+
+    pub fn reset(&mut self) {
+        self.bit_grid.clear();
+        self.num_steps = 0;
     }
 
     fn set_zeroes_border(&mut self) {

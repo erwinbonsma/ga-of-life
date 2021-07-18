@@ -1,16 +1,12 @@
-use ga_of_life::ca::{BitGrid};
+use ga_of_life::{setup_ga};
 
 fn main() {
-    let mut bit_grid = BitGrid::new(32, 4);
+    let mut ga = setup_ga();
 
-    println!("{}", bit_grid);
+    for i in 0..10 {
+        ga.step();
 
-    for i in 0..8 {
-        let v = i * 7;
-        let x = v % bit_grid.width();
-        let y = v / bit_grid.width();
-        bit_grid.set(x, y, true);
+        println!("{:?}", ga.get_stats());
+        //println!("{:?}", ga);
     }
-
-    println!("{}", bit_grid);
 }

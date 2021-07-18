@@ -13,11 +13,7 @@ use rand::{self, Rng};
 ///   can have a big impact on the quality of the search. In this case, the phenotype remains the
 ///   same, as they all try to solve the same problem.
 pub trait Phenotype : 'static + fmt::Debug {
-    /// Evaluates the fitness for the phenotype
-    ///
-    /// TODO: Generalize to support cases where the fitness cannot be determined in isolation.
-    /// E.g. where fitness is based on interaction with other individuals in the population.
-    fn evaluate(&self) -> f32;
+
 }
 
 /// A genotype encodes a solution to the optimisation problem.
@@ -25,6 +21,13 @@ pub trait Genotype<P: Phenotype> : 'static + fmt::Debug + clone::Clone {
 
     fn express(&self) -> P;
 
+}
+
+pub trait Evaluator<P: Phenotype> : fmt::Debug {
+
+    fn evaluate(&mut self, phenotype: &P) -> f32;
+
+    // TODO: Extend with bulk_evaluate to support interaction-based fitness
 }
 
 pub trait Mutation {
@@ -137,6 +140,7 @@ pub struct EvolutionaryAlgorithm<P: Phenotype, G: Genotype<P>> {
     pop_size: usize,
     recombination_prob: f32,
     mutation_prob: f32,
+    evaluator: Box<dyn Evaluator<P>>,
     selection: Box<dyn SelectionFactory<P, G>>,
     config: Box<dyn GenotypeConfig<P, G>>,
     population: Option<Population<P, G>>,
@@ -146,13 +150,15 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
     pub fn new(
         pop_size: usize,
         config: Box<dyn GenotypeConfig<P, G>>,
+        evaluator: Box<dyn Evaluator<P>>,
         selection: Box<dyn SelectionFactory<P, G>>
     ) -> Self {
         EvolutionaryAlgorithm {
             pop_size,
             config,
-            recombination_prob: 0.8,
+            recombination_prob: 0.5,
             mutation_prob: 0.8,
+            evaluator,
             selection,
             population: None,
         }
@@ -180,7 +186,7 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
             for indiv in population.iter_mut() {
                 if let Some(phenotype) = &indiv.phenotype {
                     if let None = indiv.fitness {
-                        (*indiv).fitness = Some(phenotype.evaluate());
+                        (*indiv).fitness = Some(self.evaluator.evaluate(&phenotype));
                     }
                 }
             }
@@ -215,6 +221,17 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
         }
 
         self.population = Some(population);
+    }
+
+    pub fn step(&mut self) {
+        if let Some(_) = &mut self.population {
+            self.breed();
+        } else {
+            self.start();
+        }
+
+        self.grow();
+        self.evaluate();
     }
 
     pub fn get_stats(&self) -> Option<Stats> {
