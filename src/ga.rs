@@ -127,7 +127,7 @@ pub trait Selection<P: Phenotype, G: Genotype<P>> : fmt::Debug {
     fn select_from(&mut self, population: Population<P, G>);
 
     // Selects an individual.
-    fn select(&self) -> &Individual<P, G>;
+    fn select(&mut self) -> &Individual<P, G>;
 
 }
 
