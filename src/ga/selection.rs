@@ -1,48 +1,42 @@
-use super::{Genotype, Phenotype, Individual, Population, SelectionFactory, Selector};
+use super::{Genotype, Phenotype, Individual, Population, Selection};
 use rand::{self, Rng};
 
-#[derive(Clone, Copy, Debug)]
-pub struct TournamentSelection {
-    tournament_size: usize
+#[derive(Debug)]
+pub struct TournamentSelection<P: Phenotype, G: Genotype<P>> {
+    tournament_size: usize,
+    population: Option<Population<P, G>>
 }
 
-struct TournamentSelector<P: Phenotype, G: Genotype<P>> {
-    selection: TournamentSelection,
-    population: Population<P, G>
-}
-
-impl TournamentSelection {
+impl<P: Phenotype, G: Genotype<P>> TournamentSelection<P, G> {
     pub fn new(tournament_size: usize) -> Self {
         TournamentSelection {
-            tournament_size
+            tournament_size,
+            population: None
         }
     }
 }
 
-impl<P: Phenotype, G: Genotype<P>> SelectionFactory<P, G> for TournamentSelection {
-    fn select_from(&self, population: Population<P, G>) -> Box<dyn Selector<P, G>> {
-        Box::new(
-            TournamentSelector {
-                selection: self.clone(),
-                population
-            }
-        )
-    }
-}
-
-impl<P: Phenotype, G: Genotype<P>> TournamentSelector<P, G> {
+impl<P: Phenotype, G: Genotype<P>> TournamentSelection<P, G> {
     fn select_one(&self) -> &Individual<P, G> {
-        self.population.individuals.get(
-            rand::thread_rng().gen_range(0..self.population.individuals.len())
-        ).unwrap()
+        if let Some(population) = &self.population {
+            population.individuals.get(
+                rand::thread_rng().gen_range(0..population.individuals.len())
+            ).unwrap()
+        } else {
+            panic!("You must first invoke select_from");
+        }
     }
 }
 
-impl<P: Phenotype, G: Genotype<P>> Selector<P, G> for TournamentSelector<P, G> {
+impl<P: Phenotype, G: Genotype<P>> Selection<P, G> for TournamentSelection<P, G> {
+    fn select_from(&mut self, population: Population<P, G>) {
+        self.population = Some(population);
+    }
+
     fn select(&self) -> &Individual<P, G> {
         let mut best = self.select_one();
 
-        for _ in 1..self.selection.tournament_size {
+        for _ in 1..self.tournament_size {
             let other = self.select_one();
 
             if other.fitness > best.fitness {

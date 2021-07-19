@@ -121,12 +121,14 @@ impl<P: Phenotype, G: Genotype<P>> fmt::Debug for Population<P, G> {
     }
 }
 
-pub trait Selector<P: Phenotype, G: Genotype<P>> {
-    fn select(&self) -> &Individual<P, G>;
-}
+pub trait Selection<P: Phenotype, G: Genotype<P>> : fmt::Debug {
 
-pub trait SelectionFactory<P: Phenotype, G: Genotype<P>>: fmt::Debug {
-    fn select_from(&self, population: Population<P, G>) -> Box<dyn Selector<P, G>>;
+    // Prepare new selection round, selecting from the given population.
+    fn select_from(&mut self, population: Population<P, G>);
+
+    // Selects an individual.
+    fn select(&self) -> &Individual<P, G>;
+
 }
 
 #[derive(Debug)]
@@ -141,7 +143,7 @@ pub struct EvolutionaryAlgorithm<P: Phenotype, G: Genotype<P>> {
     recombination_prob: f32,
     mutation_prob: f32,
     evaluator: Box<dyn Evaluator<P>>,
-    selection: Box<dyn SelectionFactory<P, G>>,
+    selection: Box<dyn Selection<P, G>>,
     config: Box<dyn GenotypeConfig<P, G>>,
     population: Option<Population<P, G>>,
 }
@@ -151,7 +153,7 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
         pop_size: usize,
         config: Box<dyn GenotypeConfig<P, G>>,
         evaluator: Box<dyn Evaluator<P>>,
-        selection: Box<dyn SelectionFactory<P, G>>
+        selection: Box<dyn Selection<P, G>>
     ) -> Self {
         EvolutionaryAlgorithm {
             pop_size,
@@ -208,17 +210,18 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
     /// phenotype and fitness have not yet been determined. For this, use [grow] and [evaluate].
     pub fn breed(&mut self) {
         let old_population = self.population.take();
-        let selector = (*self.selection).select_from(old_population.unwrap());
         let mut population = Population::with_capacity(self.pop_size);
+
+        (*self.selection).select_from(old_population.unwrap());
 
         while population.size() < self.pop_size {
             let mut genotype = Box::new(
                 if rand::thread_rng().gen::<f32>() < self.recombination_prob {
-                    let parent1 = selector.select();
-                    let parent2 = selector.select();
+                    let parent1 = (*self.selection).select();
+                    let parent2 = (*self.selection).select();
                     self.config.recombine(&parent1.genotype, &parent2.genotype)
                 } else {
-                    let parent = selector.select();
+                    let parent = (*self.selection).select();
                     (*parent.genotype).clone()
                 }
             );
