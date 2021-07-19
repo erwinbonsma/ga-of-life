@@ -27,7 +27,7 @@ use ga::binary::{
     BinaryBitMutation,
     BinaryNPointBitCrossover
 };
-use ga::selection::RankBasedSelection;
+use ga::selection::TournamentSelection;
 
 const GARDEN_SIZE: usize = 64;
 const SEED_PATCH_SIZE: usize = 8;
@@ -121,7 +121,7 @@ impl MyConfig {
     fn new() -> Self {
         MyConfig {
             mutation: BinaryBitMutation::new(1.0 / (SEED_PATCH_SIZE * SEED_PATCH_SIZE) as f32),
-            recombination: BinaryNPointBitCrossover::new(2)
+            recombination: BinaryNPointBitCrossover::new(1)
         }
     }
 }
@@ -145,6 +145,6 @@ pub fn setup_ga() -> EvolutionaryAlgorithm<MyPhenotype, BinaryChromosome> {
         100,
         Box::new(ga_config),
         Box::new(MyEvaluator::new()),
-        Box::new(RankBasedSelection::new(3))
+        Box::new(TournamentSelection::new(2))
     )
 }
