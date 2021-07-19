@@ -146,5 +146,9 @@ pub fn setup_ga() -> EvolutionaryAlgorithm<MyPhenotype, BinaryChromosome> {
         Box::new(ga_config),
         Box::new(MyEvaluator::new()),
         Box::new(TournamentSelection::new(2))
+    ).set_mutation_prob(
+        0.8
+    ).set_recombination_prob(
+        0.5
     )
 }

@@ -2,9 +2,9 @@ Genetic Algorithm
 -----------------
 
 Generic:
-- Make mutation and recombination rate configurable
 - Add elitism
     - Select n individuals with unique phenotypes
+- Add best individual to stats
 - Add "Expressor" (for expressing a genotype into a phenotype)
 - Add a phenotype fitness cache
 

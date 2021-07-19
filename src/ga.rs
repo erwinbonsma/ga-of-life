@@ -164,6 +164,16 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
         }
     }
 
+    pub fn set_recombination_prob(mut self, prob: f32) -> Self {
+        self.recombination_prob = prob;
+        self
+    }
+
+    pub fn set_mutation_prob(mut self, prob: f32) -> Self {
+        self.mutation_prob = prob;
+        self
+    }
+
     pub fn start(&mut self) {
         let mut population = Population::with_capacity(self.pop_size);
         population.populate(self.pop_size, &*(self.config));
