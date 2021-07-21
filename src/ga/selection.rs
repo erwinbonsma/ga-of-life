@@ -1,21 +1,29 @@
 use super::{Genotype, Phenotype, Individual, Population, Selection};
 use rand::{self, Rng};
+use std::cell::RefCell;
 
 #[derive(Debug)]
 pub struct TournamentSelection<P: Phenotype, G: Genotype<P>> {
     tournament_size: usize,
+
     population: Option<Population<P, G>>
+}
+
+#[derive(Debug)]
+struct ElitismState<P: Phenotype, G: Genotype<P>> {
+    num_selected_elites: usize,
+    wrapped_selection: Box<dyn Selection<P, G>>,
 }
 
 #[derive(Debug)]
 pub struct ElitismSelection<P: Phenotype, G: Genotype<P>> {
     // Configuration
     elite_size: usize,
-    wrapped_selection: Box<dyn Selection<P, G>>,
 
-    // Selection state
     population: Option<Population<P, G>>,
-    num_selected_elites: usize,
+
+    // Mutable state
+    state: RefCell<ElitismState<P, G>>,
 }
 
 impl<P: Phenotype, G: Genotype<P>> TournamentSelection<P, G> {
@@ -42,7 +50,7 @@ impl<P: Phenotype, G: Genotype<P>> Selection<P, G> for TournamentSelection<P, G>
         self.population = Some(population);
     }
 
-    fn select(&mut self) -> &Individual<P, G> {
+    fn select(&self) -> &Individual<P, G> {
         let mut best = self.select_one();
 
         for _ in 1..self.tournament_size {
@@ -57,13 +65,21 @@ impl<P: Phenotype, G: Genotype<P>> Selection<P, G> for TournamentSelection<P, G>
     }
 }
 
+impl<P: Phenotype, G: Genotype<P>> ElitismState<P, G> {
+    pub fn new(wrapped_selection: Box<dyn Selection<P, G>>) -> Self {
+        ElitismState {
+            wrapped_selection,
+            num_selected_elites: 0
+        }
+    }
+}
+
 impl<P: Phenotype, G: Genotype<P>>  ElitismSelection<P, G> {
     pub fn new(elite_size: usize, wrapped_selection: Box<dyn Selection<P, G>>) -> Self {
         ElitismSelection {
             elite_size,
-            wrapped_selection,
             population: None,
-            num_selected_elites: 0
+            state: RefCell::new(ElitismState::new(wrapped_selection)),
         }
     }
 }
@@ -79,26 +95,27 @@ impl<P: Phenotype, G: Genotype<P>> Selection<P, G> for ElitismSelection<P, G> {
         );
 
         self.population = Some(pop);
-        self.num_selected_elites = 0;
+        self.state.borrow_mut().num_selected_elites = 0;
     }
 
-    fn select(&mut self) -> &Individual<P, G> {
-        if self.num_selected_elites < self.elite_size {
+    fn select(&self) -> &Individual<P, G> {
+        if self.state.borrow().num_selected_elites < self.elite_size {
             if let Some(population) = &self.population {
-                let individual = population.individuals.get(self.num_selected_elites).unwrap();
+                let mut state = self.state.borrow_mut();
+                let individual = population.individuals.get(state.num_selected_elites).unwrap();
 
-                self.num_selected_elites += 1;
+                state.num_selected_elites += 1;
 
-                if self.num_selected_elites == self.elite_size {
-                    self.wrapped_selection.select_from( self.population.take().unwrap() );
+                if state.num_selected_elites == self.elite_size {
+                    state.wrapped_selection.select_from( self.population.take().unwrap() );
                 }
-        
+                
                 individual
             } else {
                 panic!("You must first invoke select_from");
             }
         } else {
-            self.wrapped_selection.select()
+            self.state.borrow().wrapped_selection.select()
         }
     }
 }
