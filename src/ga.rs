@@ -83,18 +83,12 @@ impl<P: Phenotype, G: Genotype<P>> Population<P, G> {
             individuals: Vec::with_capacity(capacity)
         }
     }
- 
-    // TODO: Change GenotypeConfig to GenotypeFactory. This requires cast of trait to super trait.
-    // See: https://users.rust-lang.org/t/casting-traitobject-to-super-trait/33524/8
-    pub fn populate(&mut self, size: usize, genotype_factory: &(dyn GenotypeConfig<P, G>)) {
-        while self.individuals.len() < size {
-            self.individuals.push(
-                Individual::new(Box::new(genotype_factory.create()))
-            );
-        }
-    }
 
-    pub fn add(&mut self, individual: Individual<P, G>) {
+    pub fn get_individual(&self, index: usize) -> &Individual<P, G> {
+        self.individuals.get(index).expect("Individual index out of range")
+    }
+ 
+    pub fn add_individual(&mut self, individual: Individual<P, G>) {
         self.individuals.push(individual);
     }
 
@@ -106,8 +100,34 @@ impl<P: Phenotype, G: Genotype<P>> Population<P, G> {
         self.individuals.iter()
     }
 
-    pub fn iter_mut(&mut self) -> slice::IterMut<'_, Individual<P, G>> {
-        self.individuals.iter_mut()
+    pub fn grow(&mut self) {
+        // TODO: Check start state is "new_generation"
+        for indiv in self.individuals.iter_mut() {
+            if let None = indiv.phenotype {
+                (*indiv).phenotype = Some(Box::new(indiv.genotype.express()));
+            }
+        }
+        // TODO: Update state to "grown"
+    }
+
+    pub fn evaluate(&mut self, evaluator: &mut(dyn Evaluator<P>)) {
+        // TODO: Check start state is "grown"
+        for indiv in self.individuals.iter_mut() {
+            if let Some(phenotype) = &indiv.phenotype {
+                if let None = indiv.fitness {
+                    (*indiv).fitness = Some(evaluator.evaluate(&phenotype));
+                }
+            }
+        }
+        // TODO: Update state to "evaluated"
+    }
+
+    pub fn new_generation(&mut self, new_indivs: Vec<Individual<P, G>>) {
+        // TODO: Check start state is "evaluated"
+        assert_eq!(new_indivs.len(), self.size());
+
+        self.individuals = new_indivs;
+        // TODO: Update state to "new_generation"
     }
 }
 
@@ -124,10 +144,12 @@ impl<P: Phenotype, G: Genotype<P>> fmt::Debug for Population<P, G> {
 pub trait Selection<P: Phenotype, G: Genotype<P>> : fmt::Debug {
 
     // Prepare new selection round, selecting from the given population.
-    fn select_from(&mut self, population: Population<P, G>);
+    fn start_selection(&mut self, _population: &Population<P, G>) {
+        // noop
+    }
 
     // Selects an individual.
-    fn select(&self) -> &Individual<P, G>;
+    fn select_from<'a>(&mut self, population: &'a Population<P, G>) -> &'a Individual<P, G>;
 
 }
 
@@ -145,7 +167,7 @@ pub struct EvolutionaryAlgorithm<P: Phenotype, G: Genotype<P>> {
     evaluator: Box<dyn Evaluator<P>>,
     selection: Box<dyn Selection<P, G>>,
     config: Box<dyn GenotypeConfig<P, G>>,
-    population: Option<Population<P, G>>,
+    population: Population<P, G>,
 }
 
 impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
@@ -162,7 +184,7 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
             mutation_prob: 0.8,
             evaluator,
             selection,
-            population: None,
+            population: Population::with_capacity(pop_size),
         }
     }
 
@@ -176,52 +198,38 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
         self
     }
 
-    pub fn start(&mut self) {
-        let mut population = Population::with_capacity(self.pop_size);
-        population.populate(self.pop_size, &*(self.config));
-
-        self.population = Some(population);
+    pub fn populate(&mut self) {
+        while self.population.size() < self.pop_size {
+            self.population.add_individual(
+                Individual::new(Box::new(self.config.create()))
+            );
+        }
     }
 
     pub fn grow(&mut self) {
-        if let Some(population) = &mut self.population {
-            for indiv in population.iter_mut() {
-                if let None = indiv.phenotype {
-                    (*indiv).phenotype = Some(Box::new(indiv.genotype.express()));
-                }
-            }
-        }
+        self.population.grow();
     }
 
     pub fn evaluate(&mut self) {
-        if let Some(population) = &mut self.population {
-            for indiv in population.iter_mut() {
-                if let Some(phenotype) = &indiv.phenotype {
-                    if let None = indiv.fitness {
-                        (*indiv).fitness = Some(self.evaluator.evaluate(&phenotype));
-                    }
-                }
-            }
-        }
+        self.population.evaluate(&mut *(self.evaluator));
     }
 
     /// Breeds a new generation of individuals. Their parents are selected from the current
     /// generation based on their fitness. The individuals will have a genotype, but their
     /// phenotype and fitness have not yet been determined. For this, use [grow] and [evaluate].
     pub fn breed(&mut self) {
-        let old_population = self.population.take();
-        let mut population = Population::with_capacity(self.pop_size);
+        let mut new_indivs = Vec::with_capacity(self.pop_size);
 
-        (*self.selection).select_from(old_population.unwrap());
+        (*self.selection).start_selection(&self.population);
 
-        while population.size() < self.pop_size {
+        while new_indivs.len() < self.pop_size {
             let mut genotype = Box::new(
                 if rand::thread_rng().gen::<f32>() < self.recombination_prob {
-                    let parent1 = (*self.selection).select();
-                    let parent2 = (*self.selection).select();
+                    let parent1 = (*self.selection).select_from(&self.population);
+                    let parent2 = (*self.selection).select_from(&self.population);
                     self.config.recombine(&parent1.genotype, &parent2.genotype)
                 } else {
-                    let parent = (*self.selection).select();
+                    let parent = (*self.selection).select_from(&self.population);
                     (*parent.genotype).clone()
                 }
             );
@@ -230,17 +238,17 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
                 self.config.mutate(&mut genotype)
             }
 
-            population.add(Individual::new(genotype))
+            new_indivs.push(Individual::new(genotype))
         }
 
-        self.population = Some(population);
+        self.population.new_generation(new_indivs);
     }
 
     pub fn step(&mut self) {
-        if let Some(_) = &mut self.population {
-            self.breed();
+        if self.population.size() == 0 {
+            self.populate();
         } else {
-            self.start();
+            self.breed();
         }
 
         self.grow();
@@ -248,30 +256,26 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
     }
 
     pub fn get_stats(&self) -> Option<Stats> {
-        if let Some(population) = &self.population {
-            let mut max: Option<f32> = None;
-            let mut sum: f32 = 0f32;
-            let mut num: usize = 0;
+        let mut max: Option<f32> = None;
+        let mut sum: f32 = 0f32;
+        let mut num: usize = 0;
 
-            for individual in population.individuals.iter() {
-                if let Some(fitness) = individual.fitness {
-                    sum += fitness;
-                    num += 1;
-                    max = Some(
-                        match max {
-                            None => fitness,
-                            Some(current_max) => current_max.max(fitness)
-                        }
-                    )
-                }
+        for individual in self.population.iter() {
+            if let Some(fitness) = individual.fitness {
+                sum += fitness;
+                num += 1;
+                max = Some(
+                    match max {
+                        None => fitness,
+                        Some(current_max) => current_max.max(fitness)
+                    }
+                )
             }
+        }
 
-            if let Some(max_fitness) = max {
-                let avg_fitness = sum / (num as f32);
-                Some(Stats { max_fitness, avg_fitness })
-            } else {
-                None
-            }
+        if let Some(max_fitness) = max {
+            let avg_fitness = sum / (num as f32);
+            Some(Stats { max_fitness, avg_fitness })
         } else {
             None
         }
