@@ -1,4 +1,4 @@
-use wasm_bindgen::prelude::*;
+//use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -9,7 +9,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub mod ca;
 pub mod ga;
 
-use std::{fmt};
+use std::{fmt, clone};
 use ca::{BitGrid, GameOfLife, GameOfLifeRunner};
 use ga::{
     EvolutionaryAlgorithm,
@@ -27,11 +27,15 @@ use ga::binary::{
     BinaryBitMutation,
     BinaryNPointBitCrossover
 };
-use ga::selection::TournamentSelection;
+use ga::selection::{
+    ElitismSelection,
+    TournamentSelection,
+};
 
 const GARDEN_SIZE: usize = 64;
 const SEED_PATCH_SIZE: usize = 8;
 
+#[derive(clone::Clone)]
 pub struct MyPhenotype {
     bit_grid: BitGrid,
 }
@@ -145,7 +149,12 @@ pub fn setup_ga() -> EvolutionaryAlgorithm<MyPhenotype, BinaryChromosome> {
         100,
         Box::new(ga_config),
         Box::new(MyEvaluator::new()),
-        Box::new(TournamentSelection::new(2))
+        Box::new(
+            ElitismSelection::new(
+                1,
+                Box::new(TournamentSelection::new(2))
+            )
+        )
     ).set_mutation_prob(
         0.8
     ).set_recombination_prob(

@@ -12,7 +12,7 @@ use rand::{self, Rng};
 /// * For a given problem you may experiment with multiple genetic encodings, as the encoding
 ///   can have a big impact on the quality of the search. In this case, the phenotype remains the
 ///   same, as they all try to solve the same problem.
-pub trait Phenotype : 'static + fmt::Debug {
+pub trait Phenotype : 'static + fmt::Debug + clone::Clone {
 
 }
 
@@ -56,7 +56,7 @@ pub trait GenotypeManipulation<P: Phenotype, G: Genotype<P>> {
 pub trait GenotypeConfig<P: Phenotype, G: Genotype<P>>: 
     GenotypeFactory<P, G> + GenotypeManipulation<P, G> + fmt::Debug {}
 
-#[derive(Debug)]
+#[derive(Debug, clone::Clone)]
 pub struct Individual<P: Phenotype, G: Genotype<P>> {
     genotype: Box<G>,
     phenotype: Option<Box<P>>,
@@ -148,6 +148,11 @@ pub trait Selection<P: Phenotype, G: Genotype<P>> : fmt::Debug {
         // noop
     }
 
+    // Returns "true" iff the next individual should be copied to the next generation unchanged.
+    fn preserve_next(&mut self) -> bool {
+        false
+    }
+
     // Selects an individual.
     fn select_from<'a>(&mut self, population: &'a Population<P, G>) -> &'a Individual<P, G>;
 
@@ -214,6 +219,31 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
         self.population.evaluate(&mut *(self.evaluator));
     }
 
+    fn new_genotype(&mut self) -> G {
+        let mut genotype = if rand::thread_rng().gen::<f32>() < self.recombination_prob {
+            let parent1 = (*self.selection).select_from(&self.population);
+            let parent2 = (*self.selection).select_from(&self.population);
+            self.config.recombine(&parent1.genotype, &parent2.genotype)
+        } else {
+            let parent = (*self.selection).select_from(&self.population);
+            (*parent.genotype).clone()
+        };
+
+        if rand::thread_rng().gen::<f32>() < self.mutation_prob {
+            self.config.mutate(&mut genotype)
+        }
+
+        genotype
+    }
+
+    fn next_individual(&mut self) -> Individual<P, G> {
+        if (*self.selection).preserve_next() {
+            (*(*self.selection).select_from(&self.population)).clone()
+        } else {
+            Individual::new(Box::new(self.new_genotype()))
+        }
+    }
+
     /// Breeds a new generation of individuals. Their parents are selected from the current
     /// generation based on their fitness. The individuals will have a genotype, but their
     /// phenotype and fitness have not yet been determined. For this, use [grow] and [evaluate].
@@ -223,22 +253,7 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
         (*self.selection).start_selection(&self.population);
 
         while new_indivs.len() < self.pop_size {
-            let mut genotype = Box::new(
-                if rand::thread_rng().gen::<f32>() < self.recombination_prob {
-                    let parent1 = (*self.selection).select_from(&self.population);
-                    let parent2 = (*self.selection).select_from(&self.population);
-                    self.config.recombine(&parent1.genotype, &parent2.genotype)
-                } else {
-                    let parent = (*self.selection).select_from(&self.population);
-                    (*parent.genotype).clone()
-                }
-            );
-
-            if rand::thread_rng().gen::<f32>() < self.mutation_prob {
-                self.config.mutate(&mut genotype)
-            }
-
-            new_indivs.push(Individual::new(genotype))
+            new_indivs.push(self.next_individual());
         }
 
         self.population.new_generation(new_indivs);

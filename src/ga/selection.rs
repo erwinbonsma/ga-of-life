@@ -80,6 +80,10 @@ impl<P: Phenotype, G: Genotype<P>> Selection<P, G> for ElitismSelection<P, G> {
         self.wrapped_selection.start_selection(population);
     }
 
+    fn preserve_next(&mut self) -> bool {
+        self.num_selected_elites < self.elite_size
+    }
+
     fn select_from<'a>(&mut self, population: &'a Population<P, G>) -> &'a Individual<P, G> {
         if self.num_selected_elites < self.elite_size {
             let individual = population.get_individual(
