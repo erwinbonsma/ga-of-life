@@ -1,4 +1,5 @@
 use std::{clone, fmt, slice};
+use std::rc::Rc;
 use rand::{self, Rng};
 
 /// A phenotype represents a solution to the optimisation problem. How good the solution is is
@@ -58,15 +59,15 @@ pub trait GenotypeConfig<P: Phenotype, G: Genotype<P>>:
 
 #[derive(Debug, clone::Clone)]
 pub struct Individual<P: Phenotype, G: Genotype<P>> {
-    genotype: Box<G>,
-    phenotype: Option<Box<P>>,
+    genotype: Rc<G>,
+    phenotype: Option<Rc<P>>,
     fitness: Option<f32>,
 }
 
 impl<P: Phenotype, G: Genotype<P>> Individual<P, G> {
-    pub fn new(genotype: Box<G>) -> Self {
+    pub fn new(genotype: G) -> Self {
         Individual {
-            genotype,
+            genotype: Rc::new(genotype),
             phenotype: None,
             fitness: None
         }
@@ -104,7 +105,7 @@ impl<P: Phenotype, G: Genotype<P>> Population<P, G> {
         // TODO: Check start state is "new_generation"
         for indiv in self.individuals.iter_mut() {
             if let None = indiv.phenotype {
-                (*indiv).phenotype = Some(Box::new(indiv.genotype.express()));
+                (*indiv).phenotype = Some(Rc::new(indiv.genotype.express()));
             }
         }
         // TODO: Update state to "grown"
@@ -206,7 +207,7 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
     pub fn populate(&mut self) {
         while self.population.size() < self.pop_size {
             self.population.add_individual(
-                Individual::new(Box::new(self.config.create()))
+                Individual::new(self.config.create())
             );
         }
     }
@@ -240,7 +241,7 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
         if (*self.selection).preserve_next() {
             (*(*self.selection).select_from(&self.population)).clone()
         } else {
-            Individual::new(Box::new(self.new_genotype()))
+            Individual::new(self.new_genotype())
         }
     }
 
