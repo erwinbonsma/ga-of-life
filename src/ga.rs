@@ -173,9 +173,10 @@ pub trait Selection<P: Phenotype, G: Genotype<P>> : fmt::Debug {
 }
 
 #[derive(Debug)]
-pub struct Stats {
-    max_fitness: f32,
-    avg_fitness: f32
+pub struct Stats<P: Phenotype, G: Genotype<P>> {
+    pub max_fitness: f32,
+    pub avg_fitness: f32,
+    pub best_indiv: Option<Individual<P, G>>,
 }
 
 #[derive(Debug)]
@@ -284,27 +285,36 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
         self.evaluate();
     }
 
-    pub fn get_stats(&self) -> Option<Stats> {
+    pub fn get_stats(&self) -> Option<Stats<P, G>> {
         let mut max: Option<f32> = None;
         let mut sum: f32 = 0f32;
         let mut num: usize = 0;
+        let mut best_indiv = None;
 
         for individual in self.population.iter() {
             if let Some(fitness) = individual.fitness {
                 sum += fitness;
                 num += 1;
-                max = Some(
-                    match max {
-                        None => fitness,
-                        Some(current_max) => current_max.max(fitness)
-                    }
-                )
+                if match max {
+                    None => true,
+                    Some(current_max) => fitness > current_max
+                } {
+                    max = Some(fitness);
+                    best_indiv = Some(individual)
+                }
             }
         }
 
         if let Some(max_fitness) = max {
             let avg_fitness = sum / (num as f32);
-            Some(Stats { max_fitness, avg_fitness })
+            Some(Stats { 
+                max_fitness,
+                avg_fitness,
+                best_indiv: match best_indiv {
+                    None => None,
+                    Some(best_indiv) => Some((*best_indiv).clone())
+                }
+            })
         } else {
             None
         }
