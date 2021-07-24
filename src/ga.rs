@@ -13,7 +13,7 @@ use rand::{self, Rng};
 /// * For a given problem you may experiment with multiple genetic encodings, as the encoding
 ///   can have a big impact on the quality of the search. In this case, the phenotype remains the
 ///   same, as they all try to solve the same problem.
-pub trait Phenotype : 'static + fmt::Debug + clone::Clone {
+pub trait Phenotype : 'static + fmt::Debug {
 
 }
 
@@ -57,7 +57,7 @@ pub trait GenotypeManipulation<P: Phenotype, G: Genotype<P>> {
 pub trait GenotypeConfig<P: Phenotype, G: Genotype<P>>: 
     GenotypeFactory<P, G> + GenotypeManipulation<P, G> + fmt::Debug {}
 
-#[derive(Debug, clone::Clone)]
+#[derive(Debug)]
 pub struct Individual<P: Phenotype, G: Genotype<P>> {
     genotype: Rc<G>,
     phenotype: Option<Rc<P>>,
@@ -70,6 +70,19 @@ impl<P: Phenotype, G: Genotype<P>> Individual<P, G> {
             genotype: Rc::new(genotype),
             phenotype: None,
             fitness: None
+        }
+    }
+}
+
+impl<P: Phenotype, G: Genotype<P>> clone::Clone for Individual<P, G> {
+    fn clone(&self) -> Self {
+        Individual {
+            genotype: Rc::clone(&self.genotype),
+            phenotype: match &self.phenotype {
+                None => None,
+                Some(phenotype) => Some(Rc::clone(phenotype))
+            },
+            fitness: self.fitness,
         }
     }
 }

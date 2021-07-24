@@ -9,7 +9,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub mod ca;
 pub mod ga;
 
-use std::{fmt, clone};
+use std::fmt;
 use ca::{BitGrid, GameOfLife, GameOfLifeRunner};
 use ga::{
     EvolutionaryAlgorithm,
@@ -35,7 +35,6 @@ use ga::selection::{
 const GARDEN_SIZE: usize = 64;
 const SEED_PATCH_SIZE: usize = 8;
 
-#[derive(clone::Clone)]
 pub struct MyPhenotype {
     bit_grid: BitGrid,
 }
