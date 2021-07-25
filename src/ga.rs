@@ -67,7 +67,7 @@ pub struct MyRef<T>(Rc<T>);
 
 #[derive(Debug)]
 pub struct Individual<G: Genotype, P: Phenotype> {
-    genotype: Rc<G>,
+    genotype: MyRef<G>,
     phenotype: Option<MyRef<P>>,
     fitness: Option<f32>,
 }
@@ -156,7 +156,7 @@ impl<T> MyRef<T> {
 impl<G: Genotype, P: Phenotype> Individual<G, P> {
     pub fn new(genotype: G) -> Self {
         Individual {
-            genotype: Rc::new(genotype),
+            genotype: MyRef::new(genotype),
             phenotype: None,
             fitness: None
         }
@@ -166,7 +166,7 @@ impl<G: Genotype, P: Phenotype> Individual<G, P> {
 impl<G: Genotype, P: Phenotype> clone::Clone for Individual<G, P> {
     fn clone(&self) -> Self {
         Individual {
-            genotype: Rc::clone(&self.genotype),
+            genotype: self.genotype.clone(),
             phenotype: match &self.phenotype {
                 None => None,
                 Some(phenotype) => Some(phenotype.clone())
