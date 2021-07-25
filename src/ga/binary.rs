@@ -8,6 +8,21 @@ pub struct BinaryChromosome {
     pub bits: BitVec,
 }
 
+#[derive(Debug)]
+pub struct BinaryBitMutation {
+    mutate_prob: f32,
+}
+
+#[derive(Debug)]
+pub struct BinaryNPointBitCrossover {
+    n: usize,
+}
+
+#[derive(Debug)]
+pub struct BinaryUniformRecombination {
+    bias: f32,
+}
+
 impl BinaryChromosome {
     pub fn new(size: usize) -> BinaryChromosome {
         let mut bits = BitVec::with_capacity(size);
@@ -40,11 +55,6 @@ impl clone::Clone for BinaryChromosome {
             bits: self.bits.clone()
         }
     }
-}
-
-#[derive(Debug)]
-pub struct BinaryBitMutation {
-    mutate_prob: f32,
 }
 
 impl BinaryBitMutation {
@@ -91,11 +101,6 @@ impl Mutation for BinaryBitMutation {
     }
 }
 
-#[derive(Debug)]
-pub struct BinaryNPointBitCrossover {
-    n: usize,
-}
-
 impl BinaryNPointBitCrossover {
     pub fn new(n: usize) -> Self {
         BinaryNPointBitCrossover {
@@ -133,11 +138,6 @@ impl Recombination for BinaryNPointBitCrossover {
 
         child
     }
-}
-
-#[derive(Debug)]
-pub struct BinaryUniformRecombination {
-    bias: f32,
 }
 
 impl BinaryUniformRecombination {

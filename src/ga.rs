@@ -64,6 +64,45 @@ pub struct Individual<P: Phenotype, G: Genotype<P>> {
     fitness: Option<f32>,
 }
 
+pub struct Population<P: Phenotype, G: Genotype<P>> {
+    individuals: Vec<Individual<P, G>>,
+}
+
+pub trait Selection<P: Phenotype, G: Genotype<P>> : fmt::Debug {
+
+    // Prepare new selection round, selecting from the given population.
+    fn start_selection(&mut self, _population: &Population<P, G>) {
+        // noop
+    }
+
+    // Returns "true" iff the next individual should be copied to the next generation unchanged.
+    fn preserve_next(&mut self) -> bool {
+        false
+    }
+
+    // Selects an individual.
+    fn select_from<'a>(&mut self, population: &'a Population<P, G>) -> &'a Individual<P, G>;
+
+}
+
+#[derive(Debug)]
+pub struct Stats<P: Phenotype, G: Genotype<P>> {
+    pub max_fitness: f32,
+    pub avg_fitness: f32,
+    pub best_indiv: Option<Individual<P, G>>,
+}
+
+#[derive(Debug)]
+pub struct EvolutionaryAlgorithm<P: Phenotype, G: Genotype<P>> {
+    pop_size: usize,
+    recombination_prob: f32,
+    mutation_prob: f32,
+    evaluator: Box<dyn Evaluator<P>>,
+    selection: Box<dyn Selection<P, G>>,
+    config: Box<dyn GenotypeConfig<P, G>>,
+    population: Population<P, G>,
+}
+
 impl<P: Phenotype, G: Genotype<P>> Individual<P, G> {
     pub fn new(genotype: G) -> Self {
         Individual {
@@ -85,10 +124,6 @@ impl<P: Phenotype, G: Genotype<P>> clone::Clone for Individual<P, G> {
             fitness: self.fitness,
         }
     }
-}
-
-pub struct Population<P: Phenotype, G: Genotype<P>> {
-    individuals: Vec<Individual<P, G>>,
 }
 
 impl<P: Phenotype, G: Genotype<P>> Population<P, G> {
@@ -153,41 +188,6 @@ impl<P: Phenotype, G: Genotype<P>> fmt::Debug for Population<P, G> {
 
         Ok(())
     }
-}
-
-pub trait Selection<P: Phenotype, G: Genotype<P>> : fmt::Debug {
-
-    // Prepare new selection round, selecting from the given population.
-    fn start_selection(&mut self, _population: &Population<P, G>) {
-        // noop
-    }
-
-    // Returns "true" iff the next individual should be copied to the next generation unchanged.
-    fn preserve_next(&mut self) -> bool {
-        false
-    }
-
-    // Selects an individual.
-    fn select_from<'a>(&mut self, population: &'a Population<P, G>) -> &'a Individual<P, G>;
-
-}
-
-#[derive(Debug)]
-pub struct Stats<P: Phenotype, G: Genotype<P>> {
-    pub max_fitness: f32,
-    pub avg_fitness: f32,
-    pub best_indiv: Option<Individual<P, G>>,
-}
-
-#[derive(Debug)]
-pub struct EvolutionaryAlgorithm<P: Phenotype, G: Genotype<P>> {
-    pop_size: usize,
-    recombination_prob: f32,
-    mutation_prob: f32,
-    evaluator: Box<dyn Evaluator<P>>,
-    selection: Box<dyn Selection<P, G>>,
-    config: Box<dyn GenotypeConfig<P, G>>,
-    population: Population<P, G>,
 }
 
 impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
