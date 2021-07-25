@@ -37,6 +37,7 @@ const SEED_PATCH_SIZE: usize = 8;
 
 struct MyExpressor {}
 
+#[derive(Hash, Eq, PartialEq)]
 pub struct MyPhenotype {
     bit_grid: BitGrid,
 }
@@ -44,6 +45,7 @@ pub struct MyPhenotype {
 struct MyEvaluator {
     gol: GameOfLife,
     gol_runner: GameOfLifeRunner,
+    num_evaluations: usize,
 }
 
 #[derive(fmt::Debug)]
@@ -92,6 +94,7 @@ impl MyEvaluator {
         MyEvaluator {
             gol: GameOfLife::new(GARDEN_SIZE, GARDEN_SIZE),
             gol_runner: GameOfLifeRunner::new(100, 2.0),
+            num_evaluations: 0,
         }
     }
 }
@@ -99,7 +102,9 @@ impl MyEvaluator {
 impl fmt::Debug for MyEvaluator {
     // Only show class name, not any state
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("MyEvaluator").finish()
+        f.debug_struct("MyEvaluator")
+            .field("num_evaluations", &self.num_evaluations)
+            .finish()
     }
 }
 
@@ -118,6 +123,8 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
         }
 
         let stats = self.gol_runner.run(&mut self.gol);
+
+        self.num_evaluations += 1;
 
         return stats.max_cells as f32 + 1.0 / (stats.max_cells_steps as f32 + 1.0);
     }
@@ -168,5 +175,5 @@ pub fn setup_ga() -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
         0.8
     ).set_recombination_prob(
         0.5
-    )
+    ).enable_fitness_cache()
 }

@@ -15,4 +15,6 @@ fn main() {
             }
         }
     }
+
+    println!("{:?}", ga.evaluator())
 }

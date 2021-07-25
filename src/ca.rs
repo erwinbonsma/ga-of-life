@@ -1,11 +1,12 @@
 use std::{clone, fmt};
+use std::hash::{Hash};
 use core::cmp::max;
 use wasm_bindgen::prelude::*;
 
 const BITS_PER_UNIT: usize = 32;
 
 #[wasm_bindgen]
-#[derive(clone::Clone)]
+#[derive(clone::Clone, Hash, Eq, PartialEq)]
 pub struct BitGrid {
     width: usize,
     height: usize,

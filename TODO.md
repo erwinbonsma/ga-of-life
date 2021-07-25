@@ -1,9 +1,6 @@
 Genetic Algorithm
 -----------------
 
-Generic:
-- Add a phenotype fitness cache
-
 Problem specific:
 - Try a neutral encoding
 

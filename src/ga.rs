@@ -1,5 +1,8 @@
 use std::{clone, fmt, slice};
 use std::rc::Rc;
+use std::ops::Deref;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use rand::{self, Rng};
 
 /// A genotype encodes a solution to the optimisation problem.
@@ -17,7 +20,7 @@ pub trait Genotype : 'static + fmt::Debug + clone::Clone {
 /// * For a given problem you may experiment with multiple genetic encodings, as the encoding
 ///   can have a big impact on the quality of the search. In this case, the phenotype remains the
 ///   same, as they all try to solve the same problem.
-pub trait Phenotype : 'static + fmt::Debug {
+pub trait Phenotype : 'static + fmt::Debug + Hash + Eq {
 }
 
 pub trait Expressor<G: Genotype, P: Phenotype> : fmt::Debug {
@@ -60,14 +63,18 @@ pub trait GenotypeConfig<G: Genotype>:
     GenotypeFactory<G> + GenotypeManipulation<G> + fmt::Debug {}
 
 #[derive(Debug)]
+pub struct PhenotypeRef<P: Phenotype>(Rc<P>);
+
+#[derive(Debug)]
 pub struct Individual<G: Genotype, P: Phenotype> {
     genotype: Rc<G>,
-    phenotype: Option<Rc<P>>,
+    phenotype: Option<PhenotypeRef<P>>,
     fitness: Option<f32>,
 }
 
 pub struct Population<G: Genotype, P: Phenotype> {
     individuals: Vec<Individual<G, P>>,
+    fitness_cache: Option<HashMap<PhenotypeRef<P>, f32>>,
 }
 
 pub trait Selection<G: Genotype, P: Phenotype> : fmt::Debug {
@@ -106,6 +113,45 @@ pub struct EvolutionaryAlgorithm<G: Genotype, P: Phenotype> {
     population: Population<G, P>,
 }
 
+impl<P: Phenotype> Deref for PhenotypeRef<P> {
+    type Target = P;
+
+    fn deref(&self) -> &Self::Target {
+        &*self.0
+    }
+
+}
+
+impl<P: Phenotype> Hash for PhenotypeRef<P> {
+
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        (*self.0).hash(state);
+    }
+
+}
+
+impl<P: Phenotype> PartialEq for PhenotypeRef<P> {
+
+    fn eq(&self, other: &Self) -> bool {
+        *self.0 == *other.0
+    }
+
+}
+
+impl<P: Phenotype> Eq for PhenotypeRef<P> {}
+
+impl<P: Phenotype> PhenotypeRef<P> {
+
+    pub fn new(phenotype: P) -> Self {
+        PhenotypeRef(Rc::new(phenotype))
+    }
+
+    pub fn clone(&self) -> Self {
+        PhenotypeRef(Rc::clone(&self.0))
+    }
+
+}
+
 impl<G: Genotype, P: Phenotype> Individual<G, P> {
     pub fn new(genotype: G) -> Self {
         Individual {
@@ -122,7 +168,7 @@ impl<G: Genotype, P: Phenotype> clone::Clone for Individual<G, P> {
             genotype: Rc::clone(&self.genotype),
             phenotype: match &self.phenotype {
                 None => None,
-                Some(phenotype) => Some(Rc::clone(phenotype))
+                Some(phenotype) => Some(phenotype.clone())
             },
             fitness: self.fitness,
         }
@@ -132,7 +178,8 @@ impl<G: Genotype, P: Phenotype> clone::Clone for Individual<G, P> {
 impl<G: Genotype, P: Phenotype> Population<G, P> {
     pub fn with_capacity(capacity: usize) -> Self {
         Population {
-            individuals: Vec::with_capacity(capacity)
+            individuals: Vec::with_capacity(capacity),
+            fitness_cache: None,
         }
     }
 
@@ -156,7 +203,9 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
         // TODO: Check start state is "new_generation"
         for indiv in self.individuals.iter_mut() {
             if let None = indiv.phenotype {
-                (*indiv).phenotype = Some(Rc::new(expressor.express(&indiv.genotype)));
+                (*indiv).phenotype = Some(
+                    PhenotypeRef::new(expressor.express(&indiv.genotype))
+                );
             }
         }
         // TODO: Update state to "grown"
@@ -167,7 +216,15 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
         for indiv in self.individuals.iter_mut() {
             if let Some(phenotype) = &indiv.phenotype {
                 if let None = indiv.fitness {
-                    (*indiv).fitness = Some(evaluator.evaluate(&phenotype));
+                    (*indiv).fitness = Some(
+                        if let Some(cache) = &mut self.fitness_cache {
+                            *cache.entry(phenotype.clone()).or_insert_with_key(
+                                |phenotype| evaluator.evaluate(&phenotype)
+                            )
+                        } else {
+                            evaluator.evaluate(&phenotype)
+                        }
+                    )
                 }
             }
         }
@@ -221,6 +278,15 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
     pub fn set_mutation_prob(mut self, prob: f32) -> Self {
         self.mutation_prob = prob;
         self
+    }
+
+    pub fn enable_fitness_cache(mut self) -> Self {
+        self.population.fitness_cache = Some(HashMap::new());
+        self
+    }
+
+    pub fn evaluator(&self) -> &Box<dyn Evaluator<P>> {
+        &self.evaluator
     }
 
     pub fn populate(&mut self) {
