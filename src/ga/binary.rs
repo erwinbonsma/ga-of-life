@@ -1,4 +1,4 @@
-use super::{Mutation, Recombination};
+use super::{Genotype, Mutation, Recombination};
 use bit_vec::BitVec;
 use rand::{self, Rng};
 use std::{clone, cmp};
@@ -56,6 +56,8 @@ impl clone::Clone for BinaryChromosome {
         }
     }
 }
+
+impl Genotype for BinaryChromosome {}
 
 impl BinaryBitMutation {
     pub fn new(mutate_prob: f32) -> Self {

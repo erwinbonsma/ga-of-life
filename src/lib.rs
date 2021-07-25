@@ -13,8 +13,8 @@ use std::fmt;
 use ca::{BitGrid, GameOfLife, GameOfLifeRunner};
 use ga::{
     EvolutionaryAlgorithm,
-    Genotype,
     Phenotype,
+    Expressor,
     Evaluator,
     GenotypeFactory,
     GenotypeManipulation,
@@ -34,6 +34,8 @@ use ga::selection::{
 
 const GARDEN_SIZE: usize = 64;
 const SEED_PATCH_SIZE: usize = 8;
+
+struct MyExpressor {}
 
 pub struct MyPhenotype {
     bit_grid: BitGrid,
@@ -60,14 +62,14 @@ impl fmt::Debug for MyPhenotype {
 
 }
 
-impl Genotype<MyPhenotype> for BinaryChromosome {
-    fn express(&self) -> MyPhenotype {
+impl Expressor<BinaryChromosome, MyPhenotype> for MyExpressor {
+    fn express(&mut self, genotype: &BinaryChromosome) -> MyPhenotype {
         let mut bit_grid = BitGrid::new(SEED_PATCH_SIZE, SEED_PATCH_SIZE);
         let mut index = 0;
 
         for x in 0..SEED_PATCH_SIZE {
             for y in 0..SEED_PATCH_SIZE {
-                bit_grid.set(x, y, self.bits[index]);
+                bit_grid.set(x, y, genotype.bits[index]);
                 index += 1;
             }
         }
@@ -76,7 +78,14 @@ impl Genotype<MyPhenotype> for BinaryChromosome {
             bit_grid
         }
     }
-} 
+}
+
+impl fmt::Debug for MyExpressor {
+    // Only show class name, not any state
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MyExpressor").finish()
+    }
+}
 
 impl MyEvaluator {
     pub fn new() -> Self {
@@ -114,7 +123,7 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
     }
 }
 
-impl GenotypeFactory<MyPhenotype, BinaryChromosome> for MyConfig {
+impl GenotypeFactory<BinaryChromosome> for MyConfig {
     fn create(&self) -> BinaryChromosome {
         BinaryChromosome::new(SEED_PATCH_SIZE * SEED_PATCH_SIZE)
     }
@@ -129,7 +138,7 @@ impl MyConfig {
     }
 }
 
-impl GenotypeManipulation<MyPhenotype, BinaryChromosome> for MyConfig {
+impl GenotypeManipulation<BinaryChromosome> for MyConfig {
     fn mutate(&self, target: &mut BinaryChromosome) {
         self.mutation.mutate(target);
     }
@@ -139,14 +148,15 @@ impl GenotypeManipulation<MyPhenotype, BinaryChromosome> for MyConfig {
     }
 }
 
-impl GenotypeConfig<MyPhenotype, BinaryChromosome> for MyConfig {}
+impl GenotypeConfig<BinaryChromosome> for MyConfig {}
 
-pub fn setup_ga() -> EvolutionaryAlgorithm<MyPhenotype, BinaryChromosome> {
+pub fn setup_ga() -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
     let ga_config = MyConfig::new();
 
     EvolutionaryAlgorithm::new(
         100,
         Box::new(ga_config),
+        Box::new(MyExpressor {}),
         Box::new(MyEvaluator::new()),
         Box::new(
             ElitismSelection::new(

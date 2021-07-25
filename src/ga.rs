@@ -2,6 +2,10 @@ use std::{clone, fmt, slice};
 use std::rc::Rc;
 use rand::{self, Rng};
 
+/// A genotype encodes a solution to the optimisation problem.
+pub trait Genotype : 'static + fmt::Debug + clone::Clone {
+}
+
 /// A phenotype represents a solution to the optimisation problem. How good the solution is is
 /// expressed by its fitness, which influences selection by the evolutionary algorithm. 
 ///
@@ -14,13 +18,11 @@ use rand::{self, Rng};
 ///   can have a big impact on the quality of the search. In this case, the phenotype remains the
 ///   same, as they all try to solve the same problem.
 pub trait Phenotype : 'static + fmt::Debug {
-
 }
 
-/// A genotype encodes a solution to the optimisation problem.
-pub trait Genotype<P: Phenotype> : 'static + fmt::Debug + clone::Clone {
+pub trait Expressor<G: Genotype, P: Phenotype> : fmt::Debug {
 
-    fn express(&self) -> P;
+    fn express(&mut self, genotype: &G) -> P;
 
 }
 
@@ -45,33 +47,33 @@ pub trait Recombination {
     ) -> Self::Genotype;
 }
 
-pub trait GenotypeFactory<P: Phenotype, G: Genotype<P>> {
+pub trait GenotypeFactory<G: Genotype> {
     fn create(&self) -> G;
 }
 
-pub trait GenotypeManipulation<P: Phenotype, G: Genotype<P>> {
+pub trait GenotypeManipulation<G: Genotype> {
     fn mutate(&self, target: &mut G);
     fn recombine(&self, parent1: &G, parent2: &G) -> G;
 }
 
-pub trait GenotypeConfig<P: Phenotype, G: Genotype<P>>: 
-    GenotypeFactory<P, G> + GenotypeManipulation<P, G> + fmt::Debug {}
+pub trait GenotypeConfig<G: Genotype>: 
+    GenotypeFactory<G> + GenotypeManipulation<G> + fmt::Debug {}
 
 #[derive(Debug)]
-pub struct Individual<P: Phenotype, G: Genotype<P>> {
+pub struct Individual<G: Genotype, P: Phenotype> {
     genotype: Rc<G>,
     phenotype: Option<Rc<P>>,
     fitness: Option<f32>,
 }
 
-pub struct Population<P: Phenotype, G: Genotype<P>> {
-    individuals: Vec<Individual<P, G>>,
+pub struct Population<G: Genotype, P: Phenotype> {
+    individuals: Vec<Individual<G, P>>,
 }
 
-pub trait Selection<P: Phenotype, G: Genotype<P>> : fmt::Debug {
+pub trait Selection<G: Genotype, P: Phenotype> : fmt::Debug {
 
     // Prepare new selection round, selecting from the given population.
-    fn start_selection(&mut self, _population: &Population<P, G>) {
+    fn start_selection(&mut self, _population: &Population<G, P>) {
         // noop
     }
 
@@ -81,29 +83,30 @@ pub trait Selection<P: Phenotype, G: Genotype<P>> : fmt::Debug {
     }
 
     // Selects an individual.
-    fn select_from<'a>(&mut self, population: &'a Population<P, G>) -> &'a Individual<P, G>;
+    fn select_from<'a>(&mut self, population: &'a Population<G, P>) -> &'a Individual<G, P>;
 
 }
 
 #[derive(Debug)]
-pub struct Stats<P: Phenotype, G: Genotype<P>> {
+pub struct Stats<G: Genotype, P: Phenotype> {
     pub max_fitness: f32,
     pub avg_fitness: f32,
-    pub best_indiv: Option<Individual<P, G>>,
+    pub best_indiv: Option<Individual<G, P>>,
 }
 
 #[derive(Debug)]
-pub struct EvolutionaryAlgorithm<P: Phenotype, G: Genotype<P>> {
+pub struct EvolutionaryAlgorithm<G: Genotype, P: Phenotype> {
     pop_size: usize,
     recombination_prob: f32,
     mutation_prob: f32,
+    expressor: Box<dyn Expressor<G, P>>,
     evaluator: Box<dyn Evaluator<P>>,
-    selection: Box<dyn Selection<P, G>>,
-    config: Box<dyn GenotypeConfig<P, G>>,
-    population: Population<P, G>,
+    selection: Box<dyn Selection<G, P>>,
+    config: Box<dyn GenotypeConfig<G>>,
+    population: Population<G, P>,
 }
 
-impl<P: Phenotype, G: Genotype<P>> Individual<P, G> {
+impl<G: Genotype, P: Phenotype> Individual<G, P> {
     pub fn new(genotype: G) -> Self {
         Individual {
             genotype: Rc::new(genotype),
@@ -113,7 +116,7 @@ impl<P: Phenotype, G: Genotype<P>> Individual<P, G> {
     }
 }
 
-impl<P: Phenotype, G: Genotype<P>> clone::Clone for Individual<P, G> {
+impl<G: Genotype, P: Phenotype> clone::Clone for Individual<G, P> {
     fn clone(&self) -> Self {
         Individual {
             genotype: Rc::clone(&self.genotype),
@@ -126,18 +129,18 @@ impl<P: Phenotype, G: Genotype<P>> clone::Clone for Individual<P, G> {
     }
 }
 
-impl<P: Phenotype, G: Genotype<P>> Population<P, G> {
+impl<G: Genotype, P: Phenotype> Population<G, P> {
     pub fn with_capacity(capacity: usize) -> Self {
         Population {
             individuals: Vec::with_capacity(capacity)
         }
     }
 
-    pub fn get_individual(&self, index: usize) -> &Individual<P, G> {
+    pub fn get_individual(&self, index: usize) -> &Individual<G, P> {
         self.individuals.get(index).expect("Individual index out of range")
     }
  
-    pub fn add_individual(&mut self, individual: Individual<P, G>) {
+    pub fn add_individual(&mut self, individual: Individual<G, P>) {
         self.individuals.push(individual);
     }
 
@@ -145,15 +148,15 @@ impl<P: Phenotype, G: Genotype<P>> Population<P, G> {
         self.individuals.len()
     }
 
-    pub fn iter(&self) -> slice::Iter<'_, Individual<P, G>> {
+    pub fn iter(&self) -> slice::Iter<'_, Individual<G, P>> {
         self.individuals.iter()
     }
 
-    pub fn grow(&mut self) {
+    pub fn grow(&mut self, expressor: &mut(dyn Expressor<G, P>)) {
         // TODO: Check start state is "new_generation"
         for indiv in self.individuals.iter_mut() {
             if let None = indiv.phenotype {
-                (*indiv).phenotype = Some(Rc::new(indiv.genotype.express()));
+                (*indiv).phenotype = Some(Rc::new(expressor.express(&indiv.genotype)));
             }
         }
         // TODO: Update state to "grown"
@@ -171,7 +174,7 @@ impl<P: Phenotype, G: Genotype<P>> Population<P, G> {
         // TODO: Update state to "evaluated"
     }
 
-    pub fn new_generation(&mut self, new_indivs: Vec<Individual<P, G>>) {
+    pub fn new_generation(&mut self, new_indivs: Vec<Individual<G, P>>) {
         // TODO: Check start state is "evaluated"
         assert_eq!(new_indivs.len(), self.size());
 
@@ -180,7 +183,7 @@ impl<P: Phenotype, G: Genotype<P>> Population<P, G> {
     }
 }
 
-impl<P: Phenotype, G: Genotype<P>> fmt::Debug for Population<P, G> {
+impl<G: Genotype, P: Phenotype> fmt::Debug for Population<G, P> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for individual in self.individuals.iter() {
             write!(f, "\n{:?}", individual)?;
@@ -190,18 +193,20 @@ impl<P: Phenotype, G: Genotype<P>> fmt::Debug for Population<P, G> {
     }
 }
 
-impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
+impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
     pub fn new(
         pop_size: usize,
-        config: Box<dyn GenotypeConfig<P, G>>,
+        config: Box<dyn GenotypeConfig<G>>,
+        expressor: Box<dyn Expressor<G, P>>,
         evaluator: Box<dyn Evaluator<P>>,
-        selection: Box<dyn Selection<P, G>>
+        selection: Box<dyn Selection<G, P>>
     ) -> Self {
         EvolutionaryAlgorithm {
             pop_size,
             config,
             recombination_prob: 0.5,
             mutation_prob: 0.8,
+            expressor,
             evaluator,
             selection,
             population: Population::with_capacity(pop_size),
@@ -227,7 +232,7 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
     }
 
     pub fn grow(&mut self) {
-        self.population.grow();
+        self.population.grow(&mut *(self.expressor));
     }
 
     pub fn evaluate(&mut self) {
@@ -251,7 +256,7 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
         genotype
     }
 
-    fn next_individual(&mut self) -> Individual<P, G> {
+    fn next_individual(&mut self) -> Individual<G, P> {
         if (*self.selection).preserve_next() {
             (*(*self.selection).select_from(&self.population)).clone()
         } else {
@@ -285,7 +290,7 @@ impl<P: Phenotype, G: Genotype<P>> EvolutionaryAlgorithm<P, G> {
         self.evaluate();
     }
 
-    pub fn get_stats(&self) -> Option<Stats<P, G>> {
+    pub fn get_stats(&self) -> Option<Stats<G, P>> {
         let mut max: Option<f32> = None;
         let mut sum: f32 = 0f32;
         let mut num: usize = 0;

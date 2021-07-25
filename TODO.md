@@ -2,7 +2,6 @@ Genetic Algorithm
 -----------------
 
 Generic:
-- Add "Expressor" (for expressing a genotype into a phenotype)
 - Add a phenotype fitness cache
 
 Problem specific:

@@ -8,10 +8,10 @@ pub struct TournamentSelection {
 }
 
 #[derive(Debug)]
-pub struct ElitismSelection<P: Phenotype, G: Genotype<P>> {
+pub struct ElitismSelection<G: Genotype, P: Phenotype> {
     // Configuration
     elite_size: usize,
-    wrapped_selection: Box<dyn Selection<P, G>>,
+    wrapped_selection: Box<dyn Selection<G, P>>,
 
     // Mutable state
     ranking: Vec<usize>,
@@ -25,18 +25,18 @@ impl TournamentSelection {
         }
     }
 
-    fn select_one<'a, P: Phenotype, G: Genotype<P>>(
-        &self, population: &'a Population<P, G>
-    ) -> &'a Individual<P, G> {
+    fn select_one<'a, G: Genotype, P: Phenotype>(
+        &self, population: &'a Population<G, P>
+    ) -> &'a Individual<G, P> {
         population.get_individual(
             rand::thread_rng().gen_range(0..population.size())
         )
     }
 }
 
-impl<P: Phenotype, G: Genotype<P>> Selection<P, G> for TournamentSelection {
+impl<G: Genotype, P: Phenotype> Selection<G, P> for TournamentSelection {
 
-    fn select_from<'a>(&mut self, population: &'a Population<P, G>) -> &'a Individual<P, G> {
+    fn select_from<'a>(&mut self, population: &'a Population<G, P>) -> &'a Individual<G, P> {
         let mut best = self.select_one(population);
 
         for _ in 1..self.tournament_size {
@@ -51,8 +51,8 @@ impl<P: Phenotype, G: Genotype<P>> Selection<P, G> for TournamentSelection {
     }
 }
 
-impl<P: Phenotype, G: Genotype<P>>  ElitismSelection<P, G> {
-    pub fn new(elite_size: usize, wrapped_selection: Box<dyn Selection<P, G>>) -> Self {
+impl<G: Genotype, P: Phenotype>  ElitismSelection<G, P> {
+    pub fn new(elite_size: usize, wrapped_selection: Box<dyn Selection<G, P>>) -> Self {
         ElitismSelection {
             elite_size,
             wrapped_selection,
@@ -62,8 +62,8 @@ impl<P: Phenotype, G: Genotype<P>>  ElitismSelection<P, G> {
     }
 }
 
-impl<P: Phenotype, G: Genotype<P>> Selection<P, G> for ElitismSelection<P, G> {
-    fn start_selection(&mut self, population: &Population<P, G>) {
+impl<G: Genotype, P: Phenotype> Selection<G, P> for ElitismSelection<G, P> {
+    fn start_selection(&mut self, population: &Population<G, P>) {
         // Sort individuals by fitness. Fittest first.
         if self.ranking.len() != population.size() {
             self.ranking = Vec::from_iter(0..population.size());
@@ -84,7 +84,7 @@ impl<P: Phenotype, G: Genotype<P>> Selection<P, G> for ElitismSelection<P, G> {
         self.num_selected_elites < self.elite_size
     }
 
-    fn select_from<'a>(&mut self, population: &'a Population<P, G>) -> &'a Individual<P, G> {
+    fn select_from<'a>(&mut self, population: &'a Population<G, P>) -> &'a Individual<G, P> {
         if self.num_selected_elites < self.elite_size {
             let individual = population.get_individual(
                 *self.ranking.get(self.num_selected_elites).expect("Elite size exceeds ranking")
