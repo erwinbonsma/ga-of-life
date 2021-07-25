@@ -63,18 +63,18 @@ pub trait GenotypeConfig<G: Genotype>:
     GenotypeFactory<G> + GenotypeManipulation<G> + fmt::Debug {}
 
 #[derive(Debug)]
-pub struct PhenotypeRef<P: Phenotype>(Rc<P>);
+pub struct MyRef<T>(Rc<T>);
 
 #[derive(Debug)]
 pub struct Individual<G: Genotype, P: Phenotype> {
     genotype: Rc<G>,
-    phenotype: Option<PhenotypeRef<P>>,
+    phenotype: Option<MyRef<P>>,
     fitness: Option<f32>,
 }
 
 pub struct Population<G: Genotype, P: Phenotype> {
     individuals: Vec<Individual<G, P>>,
-    fitness_cache: Option<HashMap<PhenotypeRef<P>, f32>>,
+    fitness_cache: Option<HashMap<MyRef<P>, f32>>,
 }
 
 pub trait Selection<G: Genotype, P: Phenotype> : fmt::Debug {
@@ -113,8 +113,9 @@ pub struct EvolutionaryAlgorithm<G: Genotype, P: Phenotype> {
     population: Population<G, P>,
 }
 
-impl<P: Phenotype> Deref for PhenotypeRef<P> {
-    type Target = P;
+impl<T> Deref for MyRef<T> {
+
+    type Target = T;
 
     fn deref(&self) -> &Self::Target {
         &*self.0
@@ -122,7 +123,7 @@ impl<P: Phenotype> Deref for PhenotypeRef<P> {
 
 }
 
-impl<P: Phenotype> Hash for PhenotypeRef<P> {
+impl<T: Hash> Hash for MyRef<T> {
 
     fn hash<H: Hasher>(&self, state: &mut H) {
         (*self.0).hash(state);
@@ -130,7 +131,7 @@ impl<P: Phenotype> Hash for PhenotypeRef<P> {
 
 }
 
-impl<P: Phenotype> PartialEq for PhenotypeRef<P> {
+impl<T: PartialEq> PartialEq for MyRef<T> {
 
     fn eq(&self, other: &Self) -> bool {
         *self.0 == *other.0
@@ -138,16 +139,16 @@ impl<P: Phenotype> PartialEq for PhenotypeRef<P> {
 
 }
 
-impl<P: Phenotype> Eq for PhenotypeRef<P> {}
+impl<T: Eq> Eq for MyRef<T> {}
 
-impl<P: Phenotype> PhenotypeRef<P> {
+impl<T> MyRef<T> {
 
-    pub fn new(phenotype: P) -> Self {
-        PhenotypeRef(Rc::new(phenotype))
+    pub fn new(wrapped: T) -> Self {
+        MyRef(Rc::new(wrapped))
     }
 
     pub fn clone(&self) -> Self {
-        PhenotypeRef(Rc::clone(&self.0))
+        MyRef(Rc::clone(&self.0))
     }
 
 }
@@ -204,7 +205,7 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
         for indiv in self.individuals.iter_mut() {
             if let None = indiv.phenotype {
                 (*indiv).phenotype = Some(
-                    PhenotypeRef::new(expressor.express(&indiv.genotype))
+                    MyRef::new(expressor.express(&indiv.genotype))
                 );
             }
         }
