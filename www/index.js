@@ -1,4 +1,4 @@
-import { GameOfLife, BitCounter } from "ga-of-life";
+import { GameOfLife, MyEvolutionaryAlgorithm } from "ga-of-life";
 
 const CELL_SIZE = 5; // px
 const GRID_COLOR = "#CCCCCC";
@@ -8,7 +8,9 @@ const ALIVE_COLOR = "#000000";
 const universe = new GameOfLife(64, 64);
 const width = universe.width();
 const height = universe.height();
-const bitCounter = new BitCounter();
+// const bitCounter = new BitCounter();
+
+const ea = new MyEvolutionaryAlgorithm();
 
 // Glider
 universe.set(1, 0, true);
@@ -30,7 +32,7 @@ function renderLoop() {
 
   //drawGrid();
   drawCells();
-  infoElement.textContent = `#cells = ${bitCounter.count_live_cells(universe)}`;
+  //infoElement.textContent = `#cells = ${bitCounter.count_live_cells(universe)}`;
 
   requestAnimationFrame(renderLoop);
 };
@@ -75,6 +77,16 @@ function drawCells() {
     ctx.stroke();
 }
 
-drawGrid();
-drawCells();
-renderLoop();
+function evolveLoop() {
+  ea.step();
+
+  infoElement.textContent = `#generations = ${ea.num_generations()}, max_fitness = ${ea.max_fitness()}`;
+
+  requestAnimationFrame(evolveLoop);
+};
+
+// drawGrid();
+// drawCells();
+// renderLoop();
+
+evolveLoop();

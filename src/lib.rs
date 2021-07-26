@@ -1,4 +1,4 @@
-//use wasm_bindgen::prelude::*;
+use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -21,6 +21,7 @@ use ga::{
     GenotypeConfig,
     Mutation,
     Recombination,
+    Stats
 };
 use ga::binary::{
     BinaryChromosome,
@@ -176,4 +177,45 @@ pub fn setup_ga() -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
     ).set_recombination_prob(
         0.5
     ).enable_fitness_cache()
+}
+
+#[wasm_bindgen]
+pub struct MyEvolutionaryAlgorithm {
+    ea: EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype>,
+    stats: Option<Stats<BinaryChromosome, MyPhenotype>>,
+}
+
+impl MyEvolutionaryAlgorithm {
+    pub fn ea(&self) -> &EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
+        &self.ea
+    }
+}
+
+#[wasm_bindgen]
+impl MyEvolutionaryAlgorithm {
+
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        MyEvolutionaryAlgorithm {
+            ea: setup_ga(),
+            stats: None,
+        }
+    }
+
+    pub fn step(&mut self) {
+        self.ea.step();
+        self.stats = self.ea.get_stats();
+    }
+
+    pub fn num_generations(&self) -> u32 {
+        self.ea.num_generations()
+    }
+
+    pub fn max_fitness(&self) -> f32 {
+        if let Some(stats) = &self.stats {
+            stats.max_fitness
+        } else {
+            0.0
+        }
+    }
 }

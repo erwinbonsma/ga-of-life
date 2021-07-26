@@ -75,6 +75,7 @@ pub struct Individual<G: Genotype, P: Phenotype> {
 pub struct Population<G: Genotype, P: Phenotype> {
     individuals: Vec<Individual<G, P>>,
     fitness_cache: Option<HashMap<MyRef<P>, f32>>,
+    generation: u32,
 }
 
 pub trait Selection<G: Genotype, P: Phenotype> : fmt::Debug {
@@ -181,6 +182,7 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
         Population {
             individuals: Vec::with_capacity(capacity),
             fitness_cache: None,
+            generation: 0,
         }
     }
 
@@ -237,6 +239,7 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
         assert_eq!(new_indivs.len(), self.size());
 
         self.individuals = new_indivs;
+        self.generation += 1;
         // TODO: Update state to "new_generation"
     }
 }
@@ -288,6 +291,10 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
 
     pub fn evaluator(&self) -> &Box<dyn Evaluator<P>> {
         &self.evaluator
+    }
+
+    pub fn num_generations(&self) -> u32 {
+        self.population.generation
     }
 
     pub fn populate(&mut self) {
