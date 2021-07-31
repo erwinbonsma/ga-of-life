@@ -14,6 +14,6 @@ export function step() {
 
     return {
         generations: ea.num_generations(),
-        max_fitness: ea.max_fitness()
+        maxFitness: ea.max_fitness()
     }
 }
