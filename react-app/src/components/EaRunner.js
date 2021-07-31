@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
-import worker from 'workerize-loader!../workers/EaWorker'; // eslint-disable-line import/no-webpack-loader-syntax
+
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import worker from 'workerize-loader!../workers/EaWorker'; 
 
 export function EaRunner() {
     const [numSteps, setNumSteps] = useState(0);
@@ -16,20 +18,28 @@ export function EaRunner() {
     const onStepClick = () => {
         setNumSteps(numSteps + 1);
         setIsRunning(true);
-        eaRunner.expensive(500).then(count => {
-            console.info(`Looped ${count} times`);
+        eaRunner.step().then(results => {
+            console.info(results);
             setIsRunning(false);
         });
     }
 
     useEffect(() => {
-        console.info("Setting worker");
-        setEaRunner(new worker());
-
-        return function cleanup() {
-            // TODO
+        async function init() {
+            console.info("Setting worker");
+            const eaWorker = new worker();
+            await eaWorker.init();    
+            setEaRunner(eaWorker);
         }
-    }, [setEaRunner]);
+
+        if (!eaRunner) {
+            init();
+        } else {
+            return function cleanup() {
+                eaRunner.terminate();
+            }
+        }
+    }, [eaRunner, setEaRunner]);
 
     return (
         <div>
