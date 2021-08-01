@@ -74,6 +74,8 @@ function drawContext() {
 export function CaRunner({ seed }) {
     const [ca, setCa] = useState();
     const [toggled, setToggled] = useState();
+    const [autoPlay, setAutoPlay] = useState();
+    const [scheduleStep, setScheduleStep] = useState(0);
 
     const clearToggled = () => {
         setToggled(new Array(GRID_SIZE * GRID_SIZE));
@@ -104,10 +106,15 @@ export function CaRunner({ seed }) {
         drawCells(drawContext(), ca, toggled);
     }
 
-    const onStepClick = () => {
+    const executeStep = () => {
         ca.step();
         updateToggled();
         drawCells(drawContext(), ca, toggled);
+    }
+
+    const onStepClick = executeStep;
+    const onTogglePlayClick = () => {
+        setAutoPlay(!autoPlay);
     }
 
     useEffect(() => {
@@ -126,9 +133,19 @@ export function CaRunner({ seed }) {
         }
     }, [ca, toggled]);
 
+    useEffect(() => {
+        if (autoPlay) {
+            executeStep();
+            // Trigger next update
+            setScheduleStep(scheduleStep + 1);
+        }
+    }, [ca, toggled, autoPlay, scheduleStep]);
+
     return (<div>
         <Button onClick={onSeedClick} disabled={!ca}>Seed</Button>
-        <Button onClick={onStepClick} disabled={!ca}>Grow</Button>
+        <Button onClick={onStepClick} disabled={!ca || autoPlay}>Step</Button>
+        <Button onClick={onTogglePlayClick} disabled={!ca || autoPlay}>Play</Button>
+        <Button onClick={onTogglePlayClick} disabled={!(ca && autoPlay)}>Pause</Button>
         <canvas id="ca-canvas"
             width={(CELL_SIZE + 1) * GRID_SIZE}
             height={(CELL_SIZE + 1) * GRID_SIZE}></canvas>
