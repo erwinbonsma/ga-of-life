@@ -1,5 +1,6 @@
 import './App.css';
 import { useState } from 'react';
+import { EaGraph } from './components/EaGraph';
 import { EaRunner } from './components/EaRunner';
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
       { eaState && 
         <p>Generation = {eaState.generations}, Best = {eaState.maxFitness}</p>
       }
+      <EaGraph eaState={eaState} />
     </div>
   );
 }
