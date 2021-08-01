@@ -218,4 +218,12 @@ impl MyEvolutionaryAlgorithm {
             0.0
         }
     }
+
+    pub fn avg_fitness(&self) -> f32 {
+        if let Some(stats) = &self.stats {
+            stats.avg_fitness
+        } else {
+            0.0
+        }
+    }
 }
