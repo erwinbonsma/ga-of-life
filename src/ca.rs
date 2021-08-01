@@ -499,8 +499,8 @@ impl GameOfLifeRunner {
 
             if num_cells > stats.max_cells {
                 stats.max_cells = num_cells;
-                stats.min_cells_after_max = num_cells;
                 stats.max_cells_steps = gol.num_steps();
+                stats.min_cells_after_max = num_cells;
                 stats.min_cells_after_max_steps = stats.max_cells_steps;
 
                 dormant = false;

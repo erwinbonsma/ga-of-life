@@ -29,7 +29,7 @@ use ga::binary::{
     BinaryNPointBitCrossover
 };
 use ga::selection::{
-    ElitismSelection,
+//    ElitismSelection,
     TournamentSelection,
 };
 
@@ -127,7 +127,7 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
 
         self.num_evaluations += 1;
 
-        return (stats.num_toggled - stats.ini_cells) as f32 + 1.0 / (stats.num_toggled_steps as f32 + 1.0);
+        return (2 * stats.num_toggled - stats.ini_cells) as f32 + 1.0 / (stats.num_toggled_steps as f32 + 1.0);
     }
 }
 
@@ -166,16 +166,17 @@ pub fn setup_ga() -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
         Box::new(ga_config),
         Box::new(MyExpressor {}),
         Box::new(MyEvaluator::new()),
-        Box::new(
-            ElitismSelection::new(
-                1,
-                Box::new(TournamentSelection::new(2))
-            )
-        )
+        Box::new(TournamentSelection::new(3))
+        // Box::new(
+        //     ElitismSelection::new(
+        //         1,
+        //         Box::new(TournamentSelection::new(2))
+        //     )
+        // )
     ).set_mutation_prob(
-        0.8
-    ).set_recombination_prob(
         0.5
+    ).set_recombination_prob(
+        0.25
     ).enable_fitness_cache()
 }
 
