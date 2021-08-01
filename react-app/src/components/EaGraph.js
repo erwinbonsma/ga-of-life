@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 const Highcharts = require('highcharts');
 require('highcharts/modules/exporting')(Highcharts);
 
-const historyLen = 1000;
+const historyLen = 250;
 
 export function EaGraph({ eaState }) {
     const [history, setHistory] = useState([]);
@@ -23,7 +23,6 @@ export function EaGraph({ eaState }) {
                 shift = true;
             }
             chart.series[0].addPoint([eaState.generations, eaState.maxFitness], true, shift);
-            chart.series[1].addPoint([eaState.generations, eaState.avgFitness], true, shift);
         }
     }, [eaState, history, chart])
 
@@ -40,12 +39,6 @@ export function EaGraph({ eaState }) {
                         marker: { enabled: false },
                         data: [],
                     },
-                    {
-                        name: 'Avg. fitness',
-                        type: 'line',
-                        marker: { enabled: false },
-                        data: [],
-                    }
                 ]
             })
         );
