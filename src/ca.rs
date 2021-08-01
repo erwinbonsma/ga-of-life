@@ -33,7 +33,7 @@ pub struct GameOfLife {
     height: usize,
     border: GridBorder,
     units_per_row: usize,
-    num_steps: usize,
+    num_steps: u32,
     rows: [Vec<u32>; 3],
 }
 
@@ -42,7 +42,7 @@ pub struct GameOfLifeRunner {
     // The minimum amount of absolute steps that the CA is allowed to be dormant, i.e. the total
     // number of steps that have passed since the maximum number of cells was reached. The CA will
     // never be terminated before this amount of passed.
-    min_absolute_dormancy: usize,
+    min_absolute_dormancy: u32,
 
     // The minimum relative number of steps that the CA is allowed to be dormant since the
     // maximum was reached. When this maximum was reached at time T, the CA will at least
@@ -53,9 +53,26 @@ pub struct GameOfLifeRunner {
 }
 
 #[wasm_bindgen]
+#[derive(Debug)]
 pub struct RunStats {
-    pub max_cells: usize,
-    pub max_cells_steps: usize,
+    // The number of cells initially alive
+    pub ini_cells: u16,
+
+    // The maximum number of cells that were alive at a given moment
+    pub max_cells: u16,
+    // The moment this occured
+    pub max_cells_steps: u32,
+
+    // The number of different cells that were alive at least once (at any time)
+    pub num_toggled: u16,
+
+    // The minimum number of cells that were alive since the maximum was reached
+    pub min_cells_after_max: u16,
+    // The moment this occured
+    pub min_cells_after_max_steps: u32,
+
+    // The total number of steps executed
+    pub num_steps: u32
 }
 
 impl BitGrid {
@@ -68,7 +85,7 @@ impl BitGrid {
             width,
             height,
             units_per_row,
-            units: vec![0; height * units_per_row]
+            units: vec![0; (height * units_per_row) as usize]
         }
     }
 
@@ -104,6 +121,14 @@ impl BitGrid {
 
     pub fn toggle_all(&mut self) {
         self.units.iter_mut().for_each(|x| *x = !*x);
+    }
+
+    pub fn or(&mut self, other: &BitGrid) {
+        if self.width == other.width && self.height == other.height {
+            self.units.iter_mut().zip(other.units.iter()).for_each(|(x, y)| *x = *x | *y);
+        } else {
+            panic!("Not yet implemented");
+        }
     }
 }
 
@@ -155,10 +180,18 @@ impl BitCounter {
         count
     }
 
-    pub fn count_live_cells(&self, gol: &GameOfLife) -> usize {
+    // Counts the number of live cells in the provided bit grid, assuming the grid is storing the
+    // state for the provided Game of Life configuration. Typically, the bit grid is the one owned
+    // by the latter, but not necessarily. For example, for counting how many cells have toggled
+    // state during a Game of Life run, a separate bit grid is maintained alongside the one that
+    // represents the current state.
+    fn count_live_cells_in_bitgrid(&self, gol: &GameOfLife, bit_grid: &BitGrid) -> usize {
+        assert_eq!(gol.bit_grid.width, bit_grid.width);
+        assert_eq!(gol.bit_grid.height, bit_grid.height);
+
         let mut count: usize = 0;
         let mut i = 0;
-        for unit in gol.bit_grid.units[
+        for unit in bit_grid.units[
             gol.units_per_row..gol.units_per_row * (gol.height + 1)
         ].iter() {
             let mut mask: u32 = !(1 << BITS_PER_UNIT_GOL);
@@ -180,7 +213,12 @@ impl BitCounter {
         }
         count
     }
+
+    pub fn count_live_cells(&self, gol: &GameOfLife) -> usize {
+        self.count_live_cells_in_bitgrid(gol, &gol.bit_grid)
+    }
 }
+
 
 // Public implementation for GameOfLife that is excluded from WASM interface
 impl GameOfLife {
@@ -239,7 +277,7 @@ impl GameOfLife {
         self.height
     }
 
-    pub fn num_steps(&self) -> usize {
+    pub fn num_steps(&self) -> u32 {
         self.num_steps
     }
 
@@ -412,11 +450,25 @@ impl GameOfLife {
     }
 }
 
+impl RunStats {
+    pub fn new(ini_cells: u16) -> Self {
+        RunStats {
+            ini_cells,
+            max_cells: ini_cells,
+            max_cells_steps: 0,
+            num_toggled: ini_cells,
+            min_cells_after_max: ini_cells,
+            min_cells_after_max_steps: 0,
+            num_steps: 0
+        }
+    }
+}
+
 #[wasm_bindgen]
 impl GameOfLifeRunner {
 
     #[wasm_bindgen(constructor)]
-    pub fn new(min_absolute_dormancy: usize, min_relative_dormancy: f32) -> Self {
+    pub fn new(min_absolute_dormancy: u32, min_relative_dormancy: f32) -> Self {
         GameOfLifeRunner {
             min_absolute_dormancy,
             min_relative_dormancy,
@@ -424,32 +476,51 @@ impl GameOfLifeRunner {
         }
     }
 
-    fn max_steps(&self, max_cells_steps: usize) -> usize {
-        let rel_limit = max_cells_steps + self.min_absolute_dormancy;
-        let abs_limit = (max_cells_steps as f32 * (1.0 + self.min_relative_dormancy)) as usize;
+    fn max_steps(&self, steps: u32) -> u32 {
+        let rel_limit = steps + self.min_absolute_dormancy;
+        let abs_limit = (steps as f32 * (1.0 + self.min_relative_dormancy)) as u32;
 
         max(rel_limit, abs_limit)
     }
 
     pub fn run(&self, gol: &mut GameOfLife) -> RunStats {
-        let mut max_cells = self.bit_counter.count_live_cells(gol);
-        let mut max_cells_steps = 0;
+        let mut stats = RunStats::new(self.bit_counter.count_live_cells(gol) as u16);
         let mut max_steps = self.max_steps(0);
+        let mut toggled = gol.bit_grid.clone();
 
         loop {
             gol.step();
 
-            let num_cells = self.bit_counter.count_live_cells(gol);
+            let mut dormant = true;
+            let num_cells = self.bit_counter.count_live_cells(gol) as u16;
 
-            if num_cells > max_cells {
-                max_cells = num_cells;
-                max_cells_steps = gol.num_steps();
-                max_steps = self.max_steps(max_cells_steps);
-            } if gol.num_steps() >= max_steps {
-                return RunStats {
-                    max_cells,
-                    max_cells_steps,
-                }
+            if num_cells > stats.max_cells {
+                stats.max_cells = num_cells;
+                stats.min_cells_after_max = num_cells;
+                stats.max_cells_steps = gol.num_steps();
+                stats.min_cells_after_max_steps = stats.max_cells_steps;
+
+                dormant = false;
+            } else if num_cells < stats.min_cells_after_max {
+                stats.min_cells_after_max = num_cells;
+                stats.min_cells_after_max_steps = gol.num_steps();
+
+                dormant = false;
+            }
+
+            toggled.or(&gol.bit_grid);
+            let toggled_count = self.bit_counter.count_live_cells_in_bitgrid(gol, &toggled) as u16;
+            if toggled_count > stats.num_toggled {
+                stats.num_toggled = toggled_count;
+
+                dormant = false;
+            }
+
+            if !dormant {
+                max_steps = self.max_steps(gol.num_steps());
+            } else if gol.num_steps() >= max_steps {
+                stats.num_steps = gol.num_steps();
+                return stats;
             }
         }
     }
@@ -738,6 +809,20 @@ mod tests {
 
             assert_eq!(stats.max_cells, 40);
             assert!(stats.max_cells_steps < 15);
+        }
+
+        #[test]
+        fn glider_toggled_count() {
+            let size = 12;
+            let mut gol = GameOfLife::new(size, size);
+            let runner = GameOfLifeRunner::new(20, 2.0);
+
+            add_glider(&mut gol, 1, 1);
+
+            let stats = runner.run(&mut gol);
+
+            assert!((stats.num_steps as usize) >= size * 4 * 2);
+            assert!((stats.num_toggled as usize) == size * 4);
         }
     }
 }
