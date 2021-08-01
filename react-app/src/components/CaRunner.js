@@ -74,11 +74,11 @@ export function CaRunner({ seed }) {
     const onSeedClick = () => {
         ca.reset();
 
-        const c0 = (GRID_SIZE - SEED_SIZE) / 2;
+        const xy0 = (GRID_SIZE - SEED_SIZE) / 2;
         for (let x = 0; x < SEED_SIZE; x++) {
             for (let y = 0; y < SEED_SIZE; y++) {
                 if (seed.charAt(x + y * (SEED_SIZE + 1)) !== ' ') {
-                    ca.set(x + c0, y + c0, true);
+                    ca.set(x + xy0, y + xy0, true);
                 }
             }
         }
@@ -100,12 +100,6 @@ export function CaRunner({ seed }) {
         if (!ca) {
             init();
         } else {
-            ca.set(1, 0, true);
-            ca.set(2, 1, true);
-            ca.set(0, 2, true);
-            ca.set(1, 2, true);
-            ca.set(2, 2, true);
-
             drawCa(ca);
         }
     }, [ca]);
@@ -113,6 +107,8 @@ export function CaRunner({ seed }) {
     return (<div>
         <Button onClick={onSeedClick} disabled={!ca}>Seed</Button>
         <Button onClick={onStepClick} disabled={!ca}>Grow</Button>
-        <canvas id="ca-canvas" width={CELL_SIZE * GRID_SIZE} height={CELL_SIZE * GRID_SIZE}></canvas>
+        <canvas id="ca-canvas"
+            width={(CELL_SIZE + 1) * GRID_SIZE}
+            height={(CELL_SIZE + 1) * GRID_SIZE}></canvas>
     </div>);
 }
