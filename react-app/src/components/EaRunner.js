@@ -4,12 +4,11 @@ import Button from 'react-bootstrap/Button';
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import worker from 'workerize-loader!../workers/EaWorker'; 
 
-export function EaRunner() {
+export function EaRunner({ onStep }) {
     const [autoRun, setAutoRun] = useState(false);
     const [isRunning, setIsRunning] = useState(false);
     const [executeStep, setExecuteStep] = useState(false);
     const [eaRunner, setEaRunner] = useState();
-    const [eaState, setEaState] = useState();
 
     const onStartClick = () => {
         setAutoRun(true);
@@ -46,21 +45,18 @@ export function EaRunner() {
                 setIsRunning(true);
 
                 eaRunner.step().then(results => {
-                    setEaState(results);
                     setIsRunning(false);
+                    onStep?.(results);
                 });
             }
         }
-    }, [isRunning, executeStep, autoRun, eaRunner]);
+    }, [isRunning, executeStep, autoRun, eaRunner, onStep]);
 
     return (
         <div>
             <Button onClick={onStartClick} disabled={isRunning || autoRun}>Run</Button>
             <Button onClick={onPauseClick} disabled={!autoRun}>Pause</Button>
             <Button onClick={onStepClick} disabled={isRunning || autoRun}>Step</Button>
-            { eaState && 
-                <p>Generation = {eaState.generations}, Best = {eaState.maxFitness}</p>
-            }
         </div>
     );
 }
