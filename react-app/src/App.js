@@ -16,7 +16,7 @@ function App() {
         </>
       }
       <EaGraph eaState={eaState} />
-      <CaRunner />
+      <CaRunner seed={eaState?.bestPhenotype} />
     </div>
   );
 }

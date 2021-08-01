@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 
 const GRID_SIZE = 64;
-const CELL_SIZE = 4;
+const SEED_SIZE = 8;
 
+const CELL_SIZE = 4;
 const GRID_COLOR = "#CCCCCC";
 const DEAD_COLOR = "#FFFFFF";
 const ALIVE_COLOR = "#000000";
@@ -67,8 +68,23 @@ function drawCa(ca) {
     drawCells(ctx, ca);
 }
 
-export function CaRunner() {
+export function CaRunner({ seed }) {
     const [ca, setCa] = useState();
+
+    const onSeedClick = () => {
+        ca.reset();
+
+        const c0 = (GRID_SIZE - SEED_SIZE) / 2;
+        for (let x = 0; x < SEED_SIZE; x++) {
+            for (let y = 0; y < SEED_SIZE; y++) {
+                if (seed.charAt(x + y * (SEED_SIZE + 1)) !== ' ') {
+                    ca.set(x + c0, y + c0, true);
+                }
+            }
+        }
+
+        drawCa(ca);
+    }
 
     const onStepClick = () => {
         ca.step();
@@ -95,7 +111,8 @@ export function CaRunner() {
     }, [ca]);
 
     return (<div>
-        <Button onClick={onStepClick} disabled={!ca}>Step</Button>
+        <Button onClick={onSeedClick} disabled={!ca}>Seed</Button>
+        <Button onClick={onStepClick} disabled={!ca}>Grow</Button>
         <canvas id="ca-canvas" width={CELL_SIZE * GRID_SIZE} height={CELL_SIZE * GRID_SIZE}></canvas>
     </div>);
 }
