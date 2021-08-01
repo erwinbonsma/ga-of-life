@@ -71,6 +71,35 @@ function drawContext() {
     return canvas.getContext('2d');
 }
 
+function updateToggled(ca, toggled) {
+    for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+            if (ca.get(col, row)) {
+                toggled[col + row * GRID_SIZE] = true;
+            }
+        }
+    }
+}
+
+function executeStep(ca, toggled) {
+    ca.step();
+    updateToggled(ca, toggled);
+    drawCells(drawContext(), ca, toggled);
+}
+
+function seedCa(ca, seed) {
+    ca.reset();
+
+    const xy0 = (GRID_SIZE - SEED_SIZE) / 2;
+    for (let x = 0; x < SEED_SIZE; x++) {
+        for (let y = 0; y < SEED_SIZE; y++) {
+            if (seed.charAt(x + y * (SEED_SIZE + 1)) !== ' ') {
+                ca.set(x + xy0, y + xy0, true);
+            }
+        }
+    }
+}
+
 export function CaRunner({ seed }) {
     const [ca, setCa] = useState();
     const [toggled, setToggled] = useState();
@@ -80,39 +109,17 @@ export function CaRunner({ seed }) {
     const clearToggled = () => {
         setToggled(new Array(GRID_SIZE * GRID_SIZE));
     }
-    const updateToggled = () => {
-        for (let row = 0; row < GRID_SIZE; row++) {
-            for (let col = 0; col < GRID_SIZE; col++) {
-                if (ca.get(col, row)) {
-                    toggled[col + row * GRID_SIZE] = true;
-                }
-            }
-        }
-    }
 
     const onSeedClick = () => {
-        ca.reset();
         clearToggled();
-
-        const xy0 = (GRID_SIZE - SEED_SIZE) / 2;
-        for (let x = 0; x < SEED_SIZE; x++) {
-            for (let y = 0; y < SEED_SIZE; y++) {
-                if (seed.charAt(x + y * (SEED_SIZE + 1)) !== ' ') {
-                    ca.set(x + xy0, y + xy0, true);
-                }
-            }
-        }
+        seedCa(ca, seed);
 
         drawCells(drawContext(), ca, toggled);
     }
 
-    const executeStep = () => {
-        ca.step();
-        updateToggled();
-        drawCells(drawContext(), ca, toggled);
+    const onStepClick = () => {
+        executeStep(ca, toggled);
     }
-
-    const onStepClick = executeStep;
     const onTogglePlayClick = () => {
         setAutoPlay(!autoPlay);
     }
@@ -135,11 +142,17 @@ export function CaRunner({ seed }) {
 
     useEffect(() => {
         if (autoPlay) {
-            executeStep();
-            // Trigger next update
-            setScheduleStep(scheduleStep + 1);
+            const timer = setTimeout(() => {
+                executeStep(ca, toggled);
+                // Trigger next update
+                setScheduleStep(scheduleStep + 1);
+            }, 10);
+
+            return function cleanup() {
+                clearTimeout(timer);
+            }
         }
-    }, [ca, toggled, autoPlay, scheduleStep]);
+    });
 
     return (<div>
         <Button onClick={onSeedClick} disabled={!ca}>Seed</Button>
