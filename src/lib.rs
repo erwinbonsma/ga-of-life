@@ -101,7 +101,7 @@ impl MyEvaluator {
 }
 
 impl fmt::Debug for MyEvaluator {
-    // Only show class name, not any state
+    // Only show class name and summary fields
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("MyEvaluator")
             .field("num_evaluations", &self.num_evaluations)
@@ -127,7 +127,7 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
 
         self.num_evaluations += 1;
 
-        return stats.max_cells as f32 + 1.0 / (stats.max_cells_steps as f32 + 1.0);
+        return (stats.num_toggled - stats.ini_cells) as f32 + 1.0 / (stats.num_toggled_steps as f32 + 1.0);
     }
 }
 

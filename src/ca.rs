@@ -65,6 +65,8 @@ pub struct RunStats {
 
     // The number of different cells that were alive at least once (at any time)
     pub num_toggled: u16,
+    // The moment this was reached
+    pub num_toggled_steps: u32,
 
     // The minimum number of cells that were alive since the maximum was reached
     pub min_cells_after_max: u16,
@@ -457,6 +459,7 @@ impl RunStats {
             max_cells: ini_cells,
             max_cells_steps: 0,
             num_toggled: ini_cells,
+            num_toggled_steps: 0,
             min_cells_after_max: ini_cells,
             min_cells_after_max_steps: 0,
             num_steps: 0
@@ -512,6 +515,7 @@ impl GameOfLifeRunner {
             let toggled_count = self.bit_counter.count_live_cells_in_bitgrid(gol, &toggled) as u16;
             if toggled_count > stats.num_toggled {
                 stats.num_toggled = toggled_count;
+                stats.num_toggled_steps = gol.num_steps();
 
                 dormant = false;
             }
