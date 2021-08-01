@@ -99,7 +99,7 @@ pub trait Selection<G: Genotype, P: Phenotype> : fmt::Debug {
 pub struct Stats<G: Genotype, P: Phenotype> {
     pub max_fitness: f32,
     pub avg_fitness: f32,
-    pub best_indiv: Option<Individual<G, P>>,
+    pub best_indiv: Individual<G, P>,
 }
 
 #[derive(Debug)]
@@ -160,6 +160,14 @@ impl<G: Genotype, P: Phenotype> Individual<G, P> {
             genotype: MyRef::new(genotype),
             phenotype: None,
             fitness: None
+        }
+    }
+
+    pub fn phenotype(&self) -> Option<&P> {
+        if let Some(phenotype) = &self.phenotype {
+            Some(&(**phenotype))
+        } else {
+            None
         }
     }
 }
@@ -389,10 +397,7 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
             Some(Stats { 
                 max_fitness,
                 avg_fitness,
-                best_indiv: match best_indiv {
-                    None => None,
-                    Some(best_indiv) => Some((*best_indiv).clone())
-                }
+                best_indiv: (*best_indiv.unwrap()).clone()
             })
         } else {
             None

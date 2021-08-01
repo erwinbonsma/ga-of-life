@@ -16,5 +16,6 @@ export function step() {
         generations: ea.num_generations(),
         maxFitness: ea.max_fitness(),
         avgFitness: ea.avg_fitness(),
+        bestPhenotype: ea.best_phenotype(),
     }
 }

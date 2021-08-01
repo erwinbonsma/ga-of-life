@@ -226,4 +226,13 @@ impl MyEvolutionaryAlgorithm {
             0.0
         }
     }
+
+    pub fn best_phenotype(&self) -> String {
+        if let Some(stats) = &self.stats {
+            if let Some(phenotype) = &stats.best_indiv.phenotype() {
+                return format!("{}", phenotype.bit_grid)
+            }
+        }
+        String::from("None")
+    }
 }

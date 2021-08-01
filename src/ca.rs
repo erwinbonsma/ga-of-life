@@ -111,7 +111,7 @@ impl fmt::Display for BitGrid {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for y in 0..self.height {
             for x in 0..self.width {
-                let symbol = if self.get(x, y) { '◼' } else { '◻' };
+                let symbol = if self.get(x, y) { '◼' } else { ' ' };
                 write!(f, "{}", symbol)?;
             }
             write!(f, "\n")?;
