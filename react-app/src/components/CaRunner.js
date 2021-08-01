@@ -6,8 +6,9 @@ const SEED_SIZE = 8;
 
 const CELL_SIZE = 4;
 const GRID_COLOR = "#CCCCCC";
-const DEAD_COLOR = "#FFFFFF";
+const EMPTY_COLOR = "#FFFFFF";
 const ALIVE_COLOR = "#000000";
+const LIVED_COLOR = "#A0A0A0";
 
 let wasmCa;
 export async function wasmInit() {
@@ -26,53 +27,70 @@ function drawGrid(ctx) {
   
     // Vertical lines.
     for (let i = 0; i <= GRID_SIZE; i++) {
-      ctx.moveTo(i * (CELL_SIZE + 1) + 1, 0);
-      ctx.lineTo(i * (CELL_SIZE + 1) + 1, (CELL_SIZE + 1) * GRID_SIZE + 1);
+        ctx.moveTo(i * (CELL_SIZE + 1) + 1, 0);
+        ctx.lineTo(i * (CELL_SIZE + 1) + 1, (CELL_SIZE + 1) * GRID_SIZE + 1);
     }
   
     // Horizontal lines.
     for (let j = 0; j <= GRID_SIZE; j++) {
-      ctx.moveTo(0,                               j * (CELL_SIZE + 1) + 1);
-      ctx.lineTo((CELL_SIZE + 1) * GRID_SIZE + 1, j * (CELL_SIZE + 1) + 1);
+        ctx.moveTo(0,                               j * (CELL_SIZE + 1) + 1);
+        ctx.lineTo((CELL_SIZE + 1) * GRID_SIZE + 1, j * (CELL_SIZE + 1) + 1);
     }
   
     ctx.stroke();
 }
 
-function drawCells(ctx, ca) {
+function drawCells(ctx, ca, toggled) {
     ctx.beginPath();
   
     for (let row = 0; row < GRID_SIZE; row++) {
-      for (let col = 0; col < GRID_SIZE; col++) {
-        ctx.fillStyle = ca.get(col, row)
-          ? ALIVE_COLOR
-          : DEAD_COLOR;
+        for (let col = 0; col < GRID_SIZE; col++) {
+        
+            if (ca.get(col, row)) {
+                ctx.fillStyle = ALIVE_COLOR;
+            } else if (toggled[col + row * GRID_SIZE]) {
+                ctx.fillStyle = LIVED_COLOR;
+            } else {
+                ctx.fillStyle = EMPTY_COLOR;
+            }
   
-        ctx.fillRect(
-          col * (CELL_SIZE + 1) + 1,
-          row * (CELL_SIZE + 1) + 1,
-          CELL_SIZE,
-          CELL_SIZE
-        );
-      }
+            ctx.fillRect(
+                col * (CELL_SIZE + 1) + 1,
+                row * (CELL_SIZE + 1) + 1,
+                CELL_SIZE,
+                CELL_SIZE
+            );
+        }
     }
   
     ctx.stroke();
 }
 
-function drawCa(ca) {
+function drawContext() {
     const canvas = document.getElementById("ca-canvas");
-    const ctx = canvas.getContext('2d');
-
-    drawGrid(ctx);
-    drawCells(ctx, ca);
+    return canvas.getContext('2d');
 }
 
 export function CaRunner({ seed }) {
     const [ca, setCa] = useState();
+    const [toggled, setToggled] = useState();
+
+    const clearToggled = () => {
+        setToggled(new Array(GRID_SIZE * GRID_SIZE));
+    }
+    const updateToggled = () => {
+        for (let row = 0; row < GRID_SIZE; row++) {
+            for (let col = 0; col < GRID_SIZE; col++) {
+                if (ca.get(col, row)) {
+                    toggled[col + row * GRID_SIZE] = true;
+                }
+            }
+        }
+    }
 
     const onSeedClick = () => {
         ca.reset();
+        clearToggled();
 
         const xy0 = (GRID_SIZE - SEED_SIZE) / 2;
         for (let x = 0; x < SEED_SIZE; x++) {
@@ -83,12 +101,13 @@ export function CaRunner({ seed }) {
             }
         }
 
-        drawCa(ca);
+        drawCells(drawContext(), ca, toggled);
     }
 
     const onStepClick = () => {
         ca.step();
-        drawCa(ca);
+        updateToggled();
+        drawCells(drawContext(), ca, toggled);
     }
 
     useEffect(() => {
@@ -98,11 +117,14 @@ export function CaRunner({ seed }) {
         }
 
         if (!ca) {
+            clearToggled();
             init();
         } else {
-            drawCa(ca);
+            const ctx = drawContext();
+            drawGrid(ctx);
+            drawCells(ctx, ca, toggled);
         }
-    }, [ca]);
+    }, [ca, toggled]);
 
     return (<div>
         <Button onClick={onSeedClick} disabled={!ca}>Seed</Button>
