@@ -102,7 +102,7 @@ function seedCa(ca, seed) {
 
 export function CaRunner({ seed }) {
     const [ca, setCa] = useState();
-    const [toggled, setToggled] = useState();
+    const [toggled, setToggled] = useState(new Array(GRID_SIZE * GRID_SIZE));
     const [autoPlay, setAutoPlay] = useState();
     const [scheduleStep, setScheduleStep] = useState(0);
 
@@ -131,12 +131,10 @@ export function CaRunner({ seed }) {
         }
 
         if (!ca) {
-            clearToggled();
             init();
         } else {
             const ctx = drawContext();
             drawGrid(ctx);
-            drawCells(ctx, ca, toggled);
         }
     }, [ca, toggled]);
 
