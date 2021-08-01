@@ -2,6 +2,7 @@ import './App.css';
 import { useState } from 'react';
 import { EaGraph } from './components/EaGraph';
 import { EaRunner } from './components/EaRunner';
+import { CaRunner } from './components/CaRunner';
 
 function App() {
   const [eaState, setEaState] = useState();
@@ -15,6 +16,7 @@ function App() {
         </>
       }
       <EaGraph eaState={eaState} />
+      <CaRunner />
     </div>
   );
 }
