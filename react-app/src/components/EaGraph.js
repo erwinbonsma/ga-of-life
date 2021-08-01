@@ -30,15 +30,20 @@ export function EaGraph({ eaState }) {
     useEffect(() => {
         setChart(
             Highcharts.chart('ea-graph', {
+                title: {
+                    text: "Fitness",
+                },
                 series: [
                     {
                         name: 'Max. fitness',
                         type: 'line',
+                        marker: { enabled: false },
                         data: [],
                     },
                     {
                         name: 'Avg. fitness',
                         type: 'line',
+                        marker: { enabled: false },
                         data: [],
                     }
                 ]
