@@ -4,18 +4,21 @@ Genetic Algorithm
 Problem specific:
 - Try a neutral encoding
 - Different evaluators:
-    - Max cells toggled
-    - Max growth (rewarding fewer initial seeds)
-    - Max end point (count number of cells when GA terminates)
-    - Boom & bust (reward growth and decline)
+    - Max cells toggled. Sub criteria:
+        - Minimum number of steps
+        - Minimum start cells
+        - Minimum cells at end
 
 Web front-end
 -------------
 
 - Add "Reset" GA button
-- Run CA for best
+- Extend GA plot with CA run stats
 - Add plot for CA with:
     - num alive cells
     - num once-alive cells
+- Look & Feel
+    - Improve layout
+    - Improve theming
 
 - Reduce WASM size
