@@ -96,7 +96,7 @@ pub trait Selection<G: Genotype, P: Phenotype> : fmt::Debug {
 }
 
 #[derive(Debug)]
-pub struct Stats<G: Genotype, P: Phenotype> {
+pub struct PopulationStats<G: Genotype, P: Phenotype> {
     pub max_fitness: f32,
     pub avg_fitness: f32,
     pub best_indiv: Individual<G, P>,
@@ -250,6 +250,38 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
         self.generation += 1;
         // TODO: Update state to "new_generation"
     }
+
+    pub fn get_stats(&self) -> Option<PopulationStats<G, P>> {
+        let mut max: Option<f32> = None;
+        let mut sum: f32 = 0f32;
+        let mut num: usize = 0;
+        let mut best_indiv = None;
+
+        for individual in self.individuals.iter() {
+            if let Some(fitness) = individual.fitness {
+                sum += fitness;
+                num += 1;
+                if match max {
+                    None => true,
+                    Some(current_max) => fitness > current_max
+                } {
+                    max = Some(fitness);
+                    best_indiv = Some(individual)
+                }
+            }
+        }
+
+        if let Some(max_fitness) = max {
+            let avg_fitness = sum / (num as f32);
+            Some(PopulationStats { 
+                max_fitness,
+                avg_fitness,
+                best_indiv: (*best_indiv.unwrap()).clone()
+            })
+        } else {
+            None
+        }
+    }
 }
 
 impl<G: Genotype, P: Phenotype> fmt::Debug for Population<G, P> {
@@ -372,36 +404,8 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
         self.evaluate();
     }
 
-    pub fn get_stats(&self) -> Option<Stats<G, P>> {
-        let mut max: Option<f32> = None;
-        let mut sum: f32 = 0f32;
-        let mut num: usize = 0;
-        let mut best_indiv = None;
-
-        for individual in self.population.iter() {
-            if let Some(fitness) = individual.fitness {
-                sum += fitness;
-                num += 1;
-                if match max {
-                    None => true,
-                    Some(current_max) => fitness > current_max
-                } {
-                    max = Some(fitness);
-                    best_indiv = Some(individual)
-                }
-            }
-        }
-
-        if let Some(max_fitness) = max {
-            let avg_fitness = sum / (num as f32);
-            Some(Stats { 
-                max_fitness,
-                avg_fitness,
-                best_indiv: (*best_indiv.unwrap()).clone()
-            })
-        } else {
-            None
-        }
+    pub fn get_population_stats(&self) -> Option<PopulationStats<G, P>> {
+        self.population.get_stats()
     }
 }
 

@@ -7,7 +7,7 @@ fn main() {
     for _ in 0..1000 {
         ga.step();
 
-        if let Some(stats) = ga.ea().get_stats() {
+        if let Some(stats) = ga.ea().get_population_stats() {
             println!("max = {}, avg = {}", stats.max_fitness, stats.avg_fitness);
             if stats.max_fitness > max_fitness {
                 max_fitness = stats.max_fitness;

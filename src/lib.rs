@@ -21,7 +21,7 @@ use ga::{
     GenotypeConfig,
     Mutation,
     Recombination,
-    Stats
+    PopulationStats
 };
 use ga::binary::{
     BinaryChromosome,
@@ -53,6 +53,12 @@ struct MyEvaluator {
 struct MyConfig {
     mutation: BinaryBitMutation,
     recombination: BinaryNPointBitCrossover,
+}
+
+#[wasm_bindgen]
+pub struct MyEvolutionaryAlgorithm {
+    ea: EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype>,
+    population_stats: Option<PopulationStats<BinaryChromosome, MyPhenotype>>,
 }
 
 impl Phenotype for MyPhenotype {}
@@ -182,12 +188,6 @@ pub fn setup_ga() -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
     ).enable_fitness_cache()
 }
 
-#[wasm_bindgen]
-pub struct MyEvolutionaryAlgorithm {
-    ea: EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype>,
-    stats: Option<Stats<BinaryChromosome, MyPhenotype>>,
-}
-
 impl MyEvolutionaryAlgorithm {
     pub fn ea(&self) -> &EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
         &self.ea
@@ -201,13 +201,13 @@ impl MyEvolutionaryAlgorithm {
     pub fn new() -> Self {
         MyEvolutionaryAlgorithm {
             ea: setup_ga(),
-            stats: None,
+            population_stats: None,
         }
     }
 
     pub fn step(&mut self) {
         self.ea.step();
-        self.stats = self.ea.get_stats();
+        self.population_stats = self.ea.get_population_stats();
     }
 
     pub fn num_generations(&self) -> u32 {
@@ -215,7 +215,7 @@ impl MyEvolutionaryAlgorithm {
     }
 
     pub fn max_fitness(&self) -> f32 {
-        if let Some(stats) = &self.stats {
+        if let Some(stats) = &self.population_stats {
             stats.max_fitness
         } else {
             0.0
@@ -223,7 +223,7 @@ impl MyEvolutionaryAlgorithm {
     }
 
     pub fn avg_fitness(&self) -> f32 {
-        if let Some(stats) = &self.stats {
+        if let Some(stats) = &self.population_stats {
             stats.avg_fitness
         } else {
             0.0
@@ -231,7 +231,7 @@ impl MyEvolutionaryAlgorithm {
     }
 
     pub fn best_phenotype(&self) -> String {
-        if let Some(stats) = &self.stats {
+        if let Some(stats) = &self.population_stats {
             if let Some(phenotype) = &stats.best_indiv.phenotype() {
                 return format!("{}", phenotype.bit_grid)
             }
