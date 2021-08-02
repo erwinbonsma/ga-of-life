@@ -107,17 +107,21 @@ impl BitGrid {
         ((unit >> (x % BITS_PER_UNIT)) & 1) == 1
     }
 
-    pub fn set(&mut self, x: usize, y: usize, val: bool) {
+    pub fn clear(&mut self, x: usize, y: usize) {
         let index = self.unit_index(x, y);
         let bitpos = x % BITS_PER_UNIT;
-        if val {
-            self.units[index] = self.units[index] | (1 << bitpos);
-        } else {
-            self.units[index] = self.units[index] & !(1 << bitpos);
-        }
+ 
+        self.units[index] = self.units[index] & !(1 << bitpos);
     }
 
-    pub fn clear(&mut self) {
+    pub fn set(&mut self, x: usize, y: usize) {
+        let index = self.unit_index(x, y);
+        let bitpos = x % BITS_PER_UNIT;
+ 
+        self.units[index] = self.units[index] | (1 << bitpos);
+    }
+
+    pub fn reset(&mut self) {
         self.units.iter_mut().for_each(|x| *x = 0);
     }
 
@@ -284,7 +288,7 @@ impl GameOfLife {
     }
 
     pub fn reset(&mut self) {
-        self.bit_grid.clear();
+        self.bit_grid.reset();
         self.num_steps = 0;
     }
 
@@ -440,15 +444,16 @@ impl GameOfLife {
         ((unit >> bitpos) & 1) == 1
     }
 
-    pub fn set(&mut self, x: usize, y: usize, val: bool) {
+    pub fn clear(&mut self, x: usize, y: usize) {
         let index = self.unit_index(x, y);
         let bitpos = (x + 1) % BITS_PER_UNIT_GOL;
-        let units = &mut self.bit_grid.units;
-        if val {
-            units[index] = units[index] | (1 << bitpos);
-        } else {
-            units[index] = units[index] & !(1 << bitpos);
-        }
+        self.bit_grid.units[index] &= !(1 << bitpos);
+    }
+
+    pub fn set(&mut self, x: usize, y: usize) {
+        let index = self.unit_index(x, y);
+        let bitpos = (x + 1) % BITS_PER_UNIT_GOL;
+        self.bit_grid.units[index] |= 1 << bitpos;
     }
 }
 
@@ -539,10 +544,10 @@ mod tests {
         let mut g = BitGrid::new(BITS_PER_UNIT * 2, 2);
         let bc = BitCounter::new();
 
-        g.set(0, 0, true);
-        g.set(15, 0, true);
-        g.set(34, 0, true);
-        g.set(57, 1, true);
+        g.set(0, 0);
+        g.set(15, 0);
+        g.set(34, 0);
+        g.set(57, 1);
 
         assert_eq!(bc.count_set_bits(&g), 4);
     }
@@ -564,11 +569,11 @@ mod tests {
             //    *
             //      *
             //  * * *
-            gol.set(1 + x, 0 + y, true);
-            gol.set(2 + x, 1 + y, true);
-            gol.set(0 + x, 2 + y, true);
-            gol.set(1 + x, 2 + y, true);
-            gol.set(2 + x, 2 + y, true);
+            gol.set(1 + x, 0 + y);
+            gol.set(2 + x, 1 + y);
+            gol.set(0 + x, 2 + y);
+            gol.set(1 + x, 2 + y);
+            gol.set(2 + x, 2 + y);
         }
 
         #[test]
@@ -588,9 +593,9 @@ mod tests {
             let mut gol = GameOfLife::new(5, 5);
             let bc = BitCounter::new();
 
-            gol.set(1, 2, true);
-            gol.set(2, 2, true);
-            gol.set(3, 2, true);
+            gol.set(1, 2);
+            gol.set(2, 2);
+            gol.set(3, 2);
 
             assert_eq!(bc.count_set_bits(&gol.bit_grid), 3);
             assert_eq!(bc.count_live_cells(&gol), 3);
@@ -628,11 +633,11 @@ mod tests {
             let h = 7;
             let mut gol = GameOfLife::new(w, h);
 
-            gol.set(0, 0, true); // Corner
-            gol.set(3, 0, true); // Top row
-            gol.set(4, h - 1, true); // Bottom row
-            gol.set(0, 2, true); // Left column
-            gol.set(w - 1, 5, true); // Right column
+            gol.set(0, 0); // Corner
+            gol.set(3, 0); // Top row
+            gol.set(4, h - 1); // Bottom row
+            gol.set(0, 2); // Left column
+            gol.set(w - 1, 5); // Right column
             gol.set_border_bits();
 
             let bc = BitCounter::new();
@@ -658,10 +663,10 @@ mod tests {
             // Pattern:
             //  * *
             //  * *
-            gol.set(1, 1, true);
-            gol.set(2, 1, true);
-            gol.set(2, 1, true);
-            gol.set(2, 2, true);
+            gol.set(1, 1);
+            gol.set(2, 1);
+            gol.set(2, 1);
+            gol.set(2, 2);
 
             gol.step();
             
@@ -680,9 +685,9 @@ mod tests {
 
             // Blinker pattern:
             //   * * *
-            gol.set(1, 2, true);
-            gol.set(2, 2, true);
-            gol.set(3, 2, true);
+            gol.set(1, 2);
+            gol.set(2, 2);
+            gol.set(3, 2);
 
             gol.step();
 
@@ -722,12 +727,12 @@ mod tests {
             // Toad pattern:
             //    * * *
             //  * * *
-            gol.set(30, 2, true);
-            gol.set(31, 2, true);
-            gol.set(32, 2, true);
-            gol.set(29, 3, true);
-            gol.set(30, 3, true);
-            gol.set(31, 3, true);
+            gol.set(30, 2);
+            gol.set(31, 2);
+            gol.set(32, 2);
+            gol.set(29, 3);
+            gol.set(30, 3);
+            gol.set(31, 3);
 
             gol.step();
             gol.step();
@@ -802,10 +807,10 @@ mod tests {
 
             for i in 5..15 {
                 if i == 7 || i == 12 {
-                    gol.set(6, i, true);
-                    gol.set(8, i, true);
+                    gol.set(6, i);
+                    gol.set(8, i);
                 } else {
-                    gol.set(7, i, true);
+                    gol.set(7, i);
                 }
             }
 

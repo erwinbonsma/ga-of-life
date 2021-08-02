@@ -72,7 +72,9 @@ impl Expressor<BinaryChromosome, MyPhenotype> for MyExpressor {
 
         for x in 0..SEED_PATCH_SIZE {
             for y in 0..SEED_PATCH_SIZE {
-                bit_grid.set(x, y, genotype.bits[index]);
+                if genotype.bits[index] {
+                    bit_grid.set(x, y);
+                }
                 index += 1;
             }
         }
@@ -118,7 +120,7 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
         for x in 0..SEED_PATCH_SIZE {
             for y in 0..SEED_PATCH_SIZE {
                 if phenotype.bit_grid.get(x, y) {
-                    self.gol.set(xy0 + x, xy0 + y, true);
+                    self.gol.set(xy0 + x, xy0 + y);
                 }
             }
         }

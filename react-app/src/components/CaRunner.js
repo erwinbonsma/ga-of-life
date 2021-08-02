@@ -94,7 +94,7 @@ function seedCa(ca, seed) {
     for (let x = 0; x < SEED_SIZE; x++) {
         for (let y = 0; y < SEED_SIZE; y++) {
             if (seed.charAt(x + y * (SEED_SIZE + 1)) !== ' ') {
-                ca.set(x + xy0, y + xy0, true);
+                ca.set(x + xy0, y + xy0);
             }
         }
     }
