@@ -103,12 +103,24 @@ pub struct PopulationStats<G: Genotype, P: Phenotype> {
 }
 
 #[derive(Debug)]
+pub struct CountingEvaluator<P: Phenotype> {
+    evaluator: Box<dyn Evaluator<P>>,
+    num_evaluations: u32,
+}
+
+#[derive(Debug)]
+pub struct OptimizationStats {
+    pub num_generations: u32,
+    pub num_evaluations: u32,
+}
+
+#[derive(Debug)]
 pub struct EvolutionaryAlgorithm<G: Genotype, P: Phenotype> {
     pop_size: usize,
     recombination_prob: f32,
     mutation_prob: f32,
     expressor: Box<dyn Expressor<G, P>>,
-    evaluator: Box<dyn Evaluator<P>>,
+    evaluator: CountingEvaluator<P>,
     selection: Box<dyn Selection<G, P>>,
     config: Box<dyn GenotypeConfig<G>>,
     population: Population<G, P>,
@@ -190,7 +202,7 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
         Population {
             individuals: Vec::with_capacity(capacity),
             fitness_cache: None,
-            generation: 0,
+            generation: 1,
         }
     }
 
@@ -294,6 +306,28 @@ impl<G: Genotype, P: Phenotype> fmt::Debug for Population<G, P> {
     }
 }
 
+impl<P: Phenotype> CountingEvaluator<P> {
+    pub fn new(
+        evaluator: Box<dyn Evaluator<P>>,
+    ) -> Self {
+        CountingEvaluator {
+            evaluator,
+            num_evaluations: 0
+        }
+    }
+
+    pub fn num_evaluations(&self) -> u32 {
+        self.num_evaluations
+    }
+}
+
+impl<P: Phenotype> Evaluator<P> for CountingEvaluator<P> {
+    fn evaluate(&mut self, phenotype: &P) -> f32 {
+        self.num_evaluations += 1;
+        self.evaluator.evaluate(phenotype)
+    }
+}
+
 impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
     pub fn new(
         pop_size: usize,
@@ -308,7 +342,7 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
             recombination_prob: 0.5,
             mutation_prob: 0.8,
             expressor,
-            evaluator,
+            evaluator: CountingEvaluator::new(evaluator),
             selection,
             population: Population::with_capacity(pop_size),
         }
@@ -330,7 +364,8 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
     }
 
     pub fn evaluator(&self) -> &Box<dyn Evaluator<P>> {
-        &self.evaluator
+        // Return wrapped evaluator to hide wrapping
+        &self.evaluator.evaluator
     }
 
     pub fn num_generations(&self) -> u32 {
@@ -350,7 +385,7 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
     }
 
     pub fn evaluate(&mut self) {
-        self.population.evaluate(&mut *(self.evaluator));
+        self.population.evaluate(&mut self.evaluator);
     }
 
     fn new_genotype(&mut self) -> G {
@@ -406,6 +441,13 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
 
     pub fn get_population_stats(&self) -> Option<PopulationStats<G, P>> {
         self.population.get_stats()
+    }
+
+    pub fn get_stats(&self) -> OptimizationStats {
+        OptimizationStats {
+            num_generations: self.population.generation,
+            num_evaluations: self.evaluator.num_evaluations,
+        }
     }
 }
 

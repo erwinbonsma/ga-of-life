@@ -4,7 +4,7 @@ fn main() {
     let mut ga = MyEvolutionaryAlgorithm::new();
     let mut max_fitness = 0.0;
 
-    for _ in 0..1000 {
+    for _ in 0..100 {
         ga.step();
 
         if let Some(stats) = ga.ea().get_population_stats() {
@@ -16,5 +16,5 @@ fn main() {
         }
     }
 
-    println!("{:?}", ga.ea().evaluator())
+    println!("{:?}", ga.ea().get_stats())
 }

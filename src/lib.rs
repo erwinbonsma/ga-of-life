@@ -46,7 +46,6 @@ pub struct MyPhenotype {
 struct MyEvaluator {
     gol: GameOfLife,
     gol_runner: GameOfLifeRunner,
-    num_evaluations: usize,
 }
 
 #[derive(fmt::Debug)]
@@ -103,17 +102,14 @@ impl MyEvaluator {
         MyEvaluator {
             gol: GameOfLife::new(GARDEN_SIZE, GARDEN_SIZE),
             gol_runner: GameOfLifeRunner::new(100, 2.0),
-            num_evaluations: 0,
         }
     }
 }
 
 impl fmt::Debug for MyEvaluator {
-    // Only show class name and summary fields
+    // Only show class name
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("MyEvaluator")
-            .field("num_evaluations", &self.num_evaluations)
-            .finish()
+        f.debug_struct("MyEvaluator").finish()
     }
 }
 
@@ -132,8 +128,6 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
         }
 
         let stats = self.gol_runner.run(&mut self.gol);
-
-        self.num_evaluations += 1;
 
         return (2 * stats.num_toggled - stats.ini_cells) as f32 + 1.0 / (stats.num_toggled_steps as f32 + 1.0);
     }
