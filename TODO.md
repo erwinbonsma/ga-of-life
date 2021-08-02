@@ -14,6 +14,7 @@ Web front-end
 
 - Add "Reset" GA button
 - Extend GA plot with CA run stats
+    - Add number of generations (from MyEA with MyEvaluator)
 - Add plot for CA with:
     - num alive cells
     - num once-alive cells
