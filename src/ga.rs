@@ -372,6 +372,10 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
         self.population.generation
     }
 
+    pub fn num_evaluations(&self) -> u32 {
+        self.evaluator.num_evaluations
+    }
+
     pub fn populate(&mut self) {
         while self.population.size() < self.pop_size {
             self.population.add_individual(

@@ -21,7 +21,7 @@ use ga::{
     GenotypeConfig,
     Mutation,
     Recombination,
-    PopulationStats
+    PopulationStats,
 };
 use ga::binary::{
     BinaryChromosome,
@@ -58,6 +58,7 @@ struct MyConfig {
 pub struct MyEvolutionaryAlgorithm {
     ea: EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype>,
     population_stats: Option<PopulationStats<BinaryChromosome, MyPhenotype>>,
+    prev_num_evaluations: u32,
 }
 
 impl Phenotype for MyPhenotype {}
@@ -196,16 +197,26 @@ impl MyEvolutionaryAlgorithm {
         MyEvolutionaryAlgorithm {
             ea: setup_ga(),
             population_stats: None,
+            prev_num_evaluations: 0,
         }
     }
 
     pub fn step(&mut self) {
+        self.prev_num_evaluations = self.ea.num_evaluations();
         self.ea.step();
         self.population_stats = self.ea.get_population_stats();
     }
 
     pub fn num_generations(&self) -> u32 {
         self.ea.num_generations()
+    }
+
+    pub fn num_evaluations(&self) -> u32 {
+        self.ea.num_evaluations()
+    }
+
+    pub fn evaluation_delta(&self) -> u32 {
+        self.ea.num_evaluations() - self.prev_num_evaluations
     }
 
     pub fn max_fitness(&self) -> f32 {

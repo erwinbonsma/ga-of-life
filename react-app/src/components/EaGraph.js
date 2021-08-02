@@ -23,6 +23,7 @@ export function EaGraph({ eaState }) {
                 shift = true;
             }
             chart.series[0].addPoint([eaState.generations, eaState.maxFitness], true, shift);
+            chart.series[1].addPoint([eaState.generations, eaState.evaluationsDelta], true, shift);
         }
     }, [eaState, history, chart])
 
@@ -32,11 +33,28 @@ export function EaGraph({ eaState }) {
                 title: {
                     text: "Fitness",
                 },
+                yAxis: [{
+                    title: {
+                        text: 'Fitness'
+                    }
+                }, {
+                    title: {
+                        text: 'Evaluations'
+                    },
+                    opposite: true
+                }],
                 series: [
                     {
                         name: 'Max. fitness',
                         type: 'line',
                         marker: { enabled: false },
+                        data: [],
+                    },
+                    {
+                        name: 'Num. evaluations',
+                        type: 'line',
+                        marker: { enabled: false },
+                        yAxis: 1,
                         data: [],
                     },
                 ]
