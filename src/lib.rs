@@ -10,7 +10,7 @@ pub mod ca;
 pub mod ga;
 
 use std::any::Any;
-use std::fmt;
+use std::fmt::{Debug, Display, Formatter, Result};
 use ca::{BitGrid, GameOfLife, GameOfLifeRunner};
 use ga::{
     EvolutionaryAlgorithm,
@@ -27,17 +27,23 @@ use ga::{
 use ga::binary::{
     BinaryChromosome,
     BinaryBitMutation,
-    BinaryNPointBitCrossover
+    BinaryUniformRecombination,
 };
 use ga::selection::{
-//    ElitismSelection,
     TournamentSelection,
 };
 
 const GARDEN_SIZE: usize = 64;
 const SEED_PATCH_SIZE: usize = 8;
 
-struct MyExpressor {}
+#[derive(Debug)]
+struct MySimpleExpressor {}
+
+#[derive(Debug)]
+struct MyNeutralExpressor {
+    bits_per_cell: u8,
+    num_groups: u8,
+}
 
 #[derive(Hash, Eq, PartialEq)]
 pub struct MyPhenotype {
@@ -50,10 +56,11 @@ struct MyEvaluator {
     num_ca_steps: u32,
 }
 
-#[derive(fmt::Debug)]
+#[derive(Debug)]
 struct MyConfig {
+    genotype_length: usize,
     mutation: BinaryBitMutation,
-    recombination: BinaryNPointBitCrossover,
+    recombination: BinaryUniformRecombination,
 }
 
 #[wasm_bindgen]
@@ -66,15 +73,14 @@ pub struct MyEvolutionaryAlgorithm {
 
 impl Phenotype for MyPhenotype {}
 
-impl fmt::Debug for MyPhenotype {
+impl Debug for MyPhenotype {
 
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        (&self.bit_grid as &dyn fmt::Display).fmt(f)
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        (&self.bit_grid as &dyn Display).fmt(f)
     }
-
 }
 
-impl Expressor<BinaryChromosome, MyPhenotype> for MyExpressor {
+impl Expressor<BinaryChromosome, MyPhenotype> for MySimpleExpressor {
 
     fn express(&mut self, genotype: &BinaryChromosome) -> MyPhenotype {
         let mut bit_grid = BitGrid::new(SEED_PATCH_SIZE, SEED_PATCH_SIZE);
@@ -93,13 +99,75 @@ impl Expressor<BinaryChromosome, MyPhenotype> for MyExpressor {
             bit_grid
         }
     }
-
 }
 
-impl fmt::Debug for MyExpressor {
-    // Only show class name, not any state
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("MyExpressor").finish()
+impl MyNeutralExpressor {
+
+    fn new(bits_per_cell: u8) -> Self {
+        assert!(bits_per_cell > 1, "Neutral encoding should have more than one bit per cell");
+
+        MyNeutralExpressor {
+            bits_per_cell,
+            num_groups: 0x1 << (bits_per_cell - 1),
+        }
+    }
+
+    fn genotype_length(&self) -> usize {
+        let num_seed_cells = SEED_PATCH_SIZE * SEED_PATCH_SIZE;
+
+        num_seed_cells * self.bits_per_cell as usize + self.num_groups as usize
+    }
+}
+
+impl Expressor<BinaryChromosome, MyPhenotype> for MyNeutralExpressor {
+
+    fn express(&mut self, genotype: &BinaryChromosome) -> MyPhenotype {
+        let mut bit_grid = BitGrid::new(SEED_PATCH_SIZE, SEED_PATCH_SIZE);
+
+        // Skip first "num_groups" bits as these are used for storing value of each group
+        let mut index = self.num_groups as usize;
+
+        for y in 0..SEED_PATCH_SIZE {
+            for x in 0..SEED_PATCH_SIZE {
+                let mut n = (self.bits_per_cell - 1) as usize;
+                let cell_state = if genotype.bits[index] {
+                    // Use local majority voting
+                    let mut votes = 0;
+
+                    while n > 0 {
+                        if genotype.bits[index + n] {
+                            votes += 1;
+                        }
+                        n -= 1;
+                    }
+
+                    votes >= (self.bits_per_cell >> 1)
+                } else {
+                    // Take value from group
+                    let mut group = 0;
+
+                    while n > 0 {
+                        group = group << 1;
+                        if genotype.bits[index + n] {
+                            group += 1;
+                        }
+                        n -= 1;
+                    }
+
+                    genotype.bits[group]
+                };
+
+                if cell_state {
+                    bit_grid.set(x, y);
+                }
+
+                index += self.bits_per_cell as usize;
+            }
+        }
+
+        MyPhenotype {
+            bit_grid
+        }
     }
 }
 
@@ -117,9 +185,9 @@ impl MyEvaluator {
     }
 }
 
-impl fmt::Debug for MyEvaluator {
+impl Debug for MyEvaluator {
     // Only show class name
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         f.debug_struct("MyEvaluator").finish()
     }
 }
@@ -150,18 +218,19 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
     }
 }
 
-impl GenotypeFactory<BinaryChromosome> for MyConfig {
-    fn create(&self) -> BinaryChromosome {
-        BinaryChromosome::new(SEED_PATCH_SIZE * SEED_PATCH_SIZE)
+impl MyConfig {
+    fn new(genotype_length: usize) -> Self {
+        MyConfig {
+            genotype_length,
+            mutation: BinaryBitMutation::new(1.0 / genotype_length as f32),
+            recombination: BinaryUniformRecombination::new(0.5)
+        }
     }
 }
 
-impl MyConfig {
-    fn new() -> Self {
-        MyConfig {
-            mutation: BinaryBitMutation::new(1.0 / (SEED_PATCH_SIZE * SEED_PATCH_SIZE) as f32),
-            recombination: BinaryNPointBitCrossover::new(1)
-        }
+impl GenotypeFactory<BinaryChromosome> for MyConfig {
+    fn create(&self) -> BinaryChromosome {
+        BinaryChromosome::new(self.genotype_length)
     }
 }
 
@@ -178,20 +247,14 @@ impl GenotypeManipulation<BinaryChromosome> for MyConfig {
 impl GenotypeConfig<BinaryChromosome> for MyConfig {}
 
 pub fn setup_ga() -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
-    let ga_config = MyConfig::new();
+    let expressor = MyNeutralExpressor::new(4);
 
     EvolutionaryAlgorithm::new(
         100,
-        Box::new(ga_config),
-        Box::new(MyExpressor {}),
+        Box::new(MyConfig::new(expressor.genotype_length())),
+        Box::new(expressor),
         Box::new(MyEvaluator::new()),
         Box::new(TournamentSelection::new(3))
-        // Box::new(
-        //     ElitismSelection::new(
-        //         1,
-        //         Box::new(TournamentSelection::new(2))
-        //     )
-        // )
     ).set_mutation_prob(
         0.5
     ).set_recombination_prob(
