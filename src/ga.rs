@@ -1,4 +1,5 @@
 use std::{clone, fmt, slice};
+use std::any::Any;
 use std::rc::Rc;
 use std::ops::Deref;
 use std::collections::HashMap;
@@ -32,6 +33,8 @@ pub trait Expressor<G: Genotype, P: Phenotype> : fmt::Debug {
 pub trait Evaluator<P: Phenotype> : fmt::Debug {
 
     fn evaluate(&mut self, phenotype: &P) -> f32;
+
+    fn as_any(&self) -> &dyn Any;
 
     // TODO: Extend with bulk_evaluate to support interaction-based fitness
 }
@@ -325,6 +328,10 @@ impl<P: Phenotype> Evaluator<P> for CountingEvaluator<P> {
     fn evaluate(&mut self, phenotype: &P) -> f32 {
         self.num_evaluations += 1;
         self.evaluator.evaluate(phenotype)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

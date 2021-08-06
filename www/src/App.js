@@ -11,7 +11,10 @@ function App() {
     <div className="App">
       <EaRunner onStep={setEaState}></EaRunner>
       { eaState && <>
-          <p>Generation = {eaState.generations}, Best = {eaState.maxFitness}</p>
+          <p>Generation = {eaState.generations}, 
+            #Evaluations = {eaState.evaluations},
+            #CA steps = {eaState.caSteps},
+            Best = {eaState.maxFitness}</p>
           <pre>{eaState.bestPhenotype}</pre>
         </>
       }

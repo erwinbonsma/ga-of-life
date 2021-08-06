@@ -9,6 +9,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub mod ca;
 pub mod ga;
 
+use std::any::Any;
 use std::fmt;
 use ca::{BitGrid, GameOfLife, GameOfLifeRunner};
 use ga::{
@@ -46,6 +47,7 @@ pub struct MyPhenotype {
 struct MyEvaluator {
     gol: GameOfLife,
     gol_runner: GameOfLifeRunner,
+    num_ca_steps: u32,
 }
 
 #[derive(fmt::Debug)]
@@ -59,6 +61,7 @@ pub struct MyEvolutionaryAlgorithm {
     ea: EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype>,
     population_stats: Option<PopulationStats<BinaryChromosome, MyPhenotype>>,
     prev_num_evaluations: u32,
+    prev_num_ca_steps: u32,
 }
 
 impl Phenotype for MyPhenotype {}
@@ -72,6 +75,7 @@ impl fmt::Debug for MyPhenotype {
 }
 
 impl Expressor<BinaryChromosome, MyPhenotype> for MyExpressor {
+
     fn express(&mut self, genotype: &BinaryChromosome) -> MyPhenotype {
         let mut bit_grid = BitGrid::new(SEED_PATCH_SIZE, SEED_PATCH_SIZE);
         let mut index = 0;
@@ -89,6 +93,7 @@ impl Expressor<BinaryChromosome, MyPhenotype> for MyExpressor {
             bit_grid
         }
     }
+
 }
 
 impl fmt::Debug for MyExpressor {
@@ -103,7 +108,12 @@ impl MyEvaluator {
         MyEvaluator {
             gol: GameOfLife::new(GARDEN_SIZE, GARDEN_SIZE),
             gol_runner: GameOfLifeRunner::new(100, 2.0),
+            num_ca_steps: 0,
         }
+    }
+
+    pub fn num_ca_steps(&self) -> u32 {
+        self.num_ca_steps
     }
 }
 
@@ -130,7 +140,13 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
 
         let stats = self.gol_runner.run(&mut self.gol);
 
+        self.num_ca_steps += stats.num_steps;
+
         return (2 * stats.num_toggled - stats.ini_cells) as f32 + 1.0 / (stats.num_toggled_steps as f32 + 1.0);
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -198,12 +214,16 @@ impl MyEvolutionaryAlgorithm {
             ea: setup_ga(),
             population_stats: None,
             prev_num_evaluations: 0,
+            prev_num_ca_steps: 0,
         }
     }
 
     pub fn step(&mut self) {
         self.prev_num_evaluations = self.ea.num_evaluations();
+        self.prev_num_ca_steps = self.num_ca_steps();
+
         self.ea.step();
+
         self.population_stats = self.ea.get_population_stats();
     }
 
@@ -217,6 +237,17 @@ impl MyEvolutionaryAlgorithm {
 
     pub fn evaluation_delta(&self) -> u32 {
         self.ea.num_evaluations() - self.prev_num_evaluations
+    }
+
+    pub fn num_ca_steps(&self) -> u32 {
+        match self.ea.evaluator().as_any().downcast_ref::<MyEvaluator>() {
+            Some(my_evaluator) => my_evaluator.num_ca_steps(),
+            None => panic!("Expected MyEvaluator as evaluator")
+        }
+    }
+
+    pub fn ca_steps_delta(&self) -> u32 {
+        self.num_ca_steps() - self.prev_num_ca_steps
     }
 
     pub fn max_fitness(&self) -> f32 {
