@@ -35,6 +35,8 @@ use ga::selection::{
 
 const GARDEN_SIZE: usize = 64;
 const SEED_PATCH_SIZE: usize = 8;
+const TOTAL_GARDEN_CELLS: usize = GARDEN_SIZE * GARDEN_SIZE;
+const TOTAL_SEED_CELLS: usize = SEED_PATCH_SIZE * SEED_PATCH_SIZE;
 
 #[derive(Debug)]
 struct MySimpleExpressor {}
@@ -210,7 +212,14 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
 
         self.num_ca_steps += stats.num_steps;
 
-        return (2 * stats.num_toggled - stats.ini_cells) as f32 + 1.0 / (stats.num_toggled_steps as f32 + 1.0);
+        (
+            // Reward total garden cells toggled
+            2 * (stats.num_toggled as i32 - TOTAL_GARDEN_CELLS as i32) +
+            // Reward fewer seed cells
+            TOTAL_SEED_CELLS as i32 - stats.ini_cells as i32
+        ) as f32 
+            // Reward quick coverage of garden
+            //+ 1.0 / (stats.num_toggled_steps as f32 + 1.0)
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -256,9 +265,9 @@ pub fn setup_ga() -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
         Box::new(MyEvaluator::new()),
         Box::new(TournamentSelection::new(3))
     ).set_mutation_prob(
-        0.5
+        0.9
     ).set_recombination_prob(
-        0.25
+        0.4
     ).enable_fitness_cache()
 }
 
