@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { EaGraph } from './components/EaGraph';
 import { EaRunner } from './components/EaRunner';
 import { CaRunner } from './components/CaRunner';
+import { GenotypePlot } from './components/GenotypePlot';
 
 function App() {
   const [eaState, setEaState] = useState();
@@ -18,6 +19,7 @@ function App() {
           <pre>{eaState.bestPhenotype}</pre>
         </>
       }
+      <GenotypePlot genotype={eaState?.bestGenotype} plotId="best-genotype" />
       <EaGraph eaState={eaState} />
       <CaRunner seed={eaState?.bestPhenotype} />
     </div>

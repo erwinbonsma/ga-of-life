@@ -69,9 +69,13 @@ struct MyConfig {
 #[wasm_bindgen]
 pub struct MyEvolutionaryAlgorithm {
     ea: EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype>,
+
     population_stats: Option<PopulationStats<BinaryChromosome, MyPhenotype>>,
+
     prev_num_evaluations: u32,
     prev_num_ca_steps: u32,
+
+    gene_counts: Vec<u32>,
 }
 
 impl Phenotype for MyPhenotype {}
@@ -310,6 +314,7 @@ impl MyEvolutionaryAlgorithm {
             population_stats: None,
             prev_num_evaluations: 0,
             prev_num_ca_steps: 0,
+            gene_counts: vec![],
         }
     }
 
@@ -368,5 +373,36 @@ impl MyEvolutionaryAlgorithm {
             }
         }
         String::from("None")
+    }
+
+    pub fn best_genotype(&self) -> String {
+        if let Some(stats) = &self.population_stats {
+            stats.best_indiv.genotype().bits
+                .iter()
+                .map(|bit| if bit { '1' } else { '0' })
+                .collect::<String>()
+        } else {
+            String::from("")
+        }
+    }
+
+    pub fn gene_distribution(&mut self) -> Box<[f32]> {
+        self.gene_counts.clear();
+
+        for indiv in self.ea.population().iter() {
+            let genotype = indiv.genotype();
+
+            for (index, gene) in genotype.bits.iter().enumerate() {
+                if gene {
+                    self.gene_counts[index] += 1;
+                }
+            }
+        }
+
+        self.gene_counts
+            .iter()
+            .map(|x| *x as f32 / self.ea.population().size() as f32)
+            .collect::<Vec<f32>>()
+            .into_boxed_slice()
     }
 }

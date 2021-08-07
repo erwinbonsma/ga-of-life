@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
-
-const GRID_SIZE = 64;
-const SEED_SIZE = 8;
+import { GRID_SIZE, SEED_SIZE } from '../shared/Constants';
 
 const CELL_SIZE = 4;
 const GRID_COLOR = "#CCCCCC";

@@ -20,6 +20,8 @@ export function step() {
         caStepsDelta: ea.ca_steps_delta(),
         maxFitness: ea.max_fitness(),
         avgFitness: ea.avg_fitness(),
+        bestGenotype: ea.best_genotype(),
         bestPhenotype: ea.best_phenotype(),
+        //geneDistribution: ea.gene_distribution(),
     }
 }

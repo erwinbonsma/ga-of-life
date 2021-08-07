@@ -27,7 +27,6 @@ pub trait Phenotype : 'static + fmt::Debug + Hash + Eq {
 pub trait Expressor<G: Genotype, P: Phenotype> : fmt::Debug {
 
     fn express(&mut self, genotype: &G) -> P;
-
 }
 
 pub trait Evaluator<P: Phenotype> : fmt::Debug {
@@ -178,6 +177,10 @@ impl<G: Genotype, P: Phenotype> Individual<G, P> {
         }
     }
 
+    pub fn genotype(&self) -> &MyRef<G> {
+        &self.genotype
+    }
+
     pub fn phenotype(&self) -> Option<&P> {
         if let Some(phenotype) = &self.phenotype {
             Some(&(**phenotype))
@@ -207,6 +210,10 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
             fitness_cache: None,
             generation: 1,
         }
+    }
+
+    pub fn generation(&self) -> u32  {
+        self.generation
     }
 
     pub fn get_individual(&self, index: usize) -> &Individual<G, P> {
@@ -373,6 +380,10 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
     pub fn evaluator(&self) -> &Box<dyn Evaluator<P>> {
         // Return wrapped evaluator to hide wrapping
         &self.evaluator.evaluator
+    }
+
+    pub fn population(&self) -> &Population<G, P> {
+        &self.population
     }
 
     pub fn num_generations(&self) -> u32 {
