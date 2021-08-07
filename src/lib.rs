@@ -45,6 +45,7 @@ struct MySimpleExpressor {}
 struct MyNeutralExpressor {
     bits_per_cell: u8,
     num_groups: u8,
+    group_values: Vec<bool>,
 }
 
 #[derive(Hash, Eq, PartialEq)]
@@ -108,16 +109,18 @@ impl MyNeutralExpressor {
     fn new(bits_per_cell: u8) -> Self {
         assert!(bits_per_cell > 1, "Neutral encoding should have more than one bit per cell");
 
+        let num_groups = 0x1 << (bits_per_cell - 1);
         MyNeutralExpressor {
             bits_per_cell,
-            num_groups: 0x1 << (bits_per_cell - 1),
+            num_groups,
+            group_values: Vec::with_capacity(num_groups as usize),
         }
     }
 
     fn genotype_length(&self) -> usize {
         let num_seed_cells = SEED_PATCH_SIZE * SEED_PATCH_SIZE;
 
-        num_seed_cells * self.bits_per_cell as usize + self.num_groups as usize
+        num_seed_cells * self.bits_per_cell as usize + 2 * self.num_groups as usize
     }
 }
 
@@ -126,8 +129,28 @@ impl Expressor<BinaryChromosome, MyPhenotype> for MyNeutralExpressor {
     fn express(&mut self, genotype: &BinaryChromosome) -> MyPhenotype {
         let mut bit_grid = BitGrid::new(SEED_PATCH_SIZE, SEED_PATCH_SIZE);
 
-        // Skip first "num_groups" bits as these are used for storing value of each group
-        let mut index = self.num_groups as usize;
+        // Determine values of each group
+        let ng = self.num_groups as usize;
+        self.group_values.clear();
+        // Set to initial value
+        for i in 0..ng {
+            self.group_values.push(genotype.bits[i]);
+        }
+        // Optionally swap neighbours. This is done so that a mutation of a single "swap" bit can trigger an arbitrary
+        // change to the phenotype. If two neighbouring groups have a different value, a swap means that one group of
+        // alive cells is switched off and another set of dead cells (not necessarily of the same size) is turned on. 
+        for i in 0..ng {
+            if genotype.bits[ng + i] {
+                // Swap with next
+                let j = (i + 1) % ng;
+                let tmp = self.group_values[i];
+                self.group_values[i] = self.group_values[j];
+                self.group_values[j] = tmp;
+            }
+        }
+
+        // Skip first (num_groups * 2) bits as these are used for storing value of each group
+        let mut index = 2 * ng;
 
         for y in 0..SEED_PATCH_SIZE {
             for x in 0..SEED_PATCH_SIZE {
@@ -156,7 +179,7 @@ impl Expressor<BinaryChromosome, MyPhenotype> for MyNeutralExpressor {
                         n -= 1;
                     }
 
-                    genotype.bits[group]
+                    self.group_values[group]
                 };
 
                 if cell_state {
