@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import worker from 'workerize-loader!../workers/EaWorker'; 
+import worker from 'workerize-loader!../workers/EaWorker';
 
 export function EaRunner({ onStep }) {
     const [autoRun, setAutoRun] = useState(false);

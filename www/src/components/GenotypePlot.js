@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { NUM_GENOTYPE_GROUPS, SEED_SIZE } from '../shared/Constants';
 
+function fillStyle(intensity) {
+    const boundedIntensity = Math.min(1, Math.max(0, Number(intensity)));
+
+    return `rgb(${(1 - boundedIntensity) * 255}, ${boundedIntensity * 255}, 0)`;
+}
+
 function drawGenotype(ctx, genotype, cellSize) {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -11,12 +17,7 @@ function drawGenotype(ctx, genotype, cellSize) {
     const w = cellSize * 2 + 1;
 
     while (index < numGroupBits) {
-        if (genotype[index] === '1') {
-            ctx.fillStyle = "#00FF00";
-        } else {
-            ctx.fillStyle = "#000000";
-        }
-
+        ctx.fillStyle = fillStyle(genotype[index]);
         ctx.fillRect(x, y, w, w);
 
         index += 1;
@@ -30,12 +31,7 @@ function drawGenotype(ctx, genotype, cellSize) {
 
     y += cellSize;
     const plotCell = function(index, x, y) {
-        if (genotype[index] === '1') {
-            ctx.fillStyle = "#00FF00";
-        } else {
-            ctx.fillStyle = "#000000";
-        }
-
+        ctx.fillStyle = fillStyle(genotype[index]);
         ctx.fillRect(x, y, cellSize, cellSize);
     }
 

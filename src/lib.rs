@@ -1,4 +1,5 @@
 use wasm_bindgen::prelude::*;
+use console_error_panic_hook;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -76,6 +77,7 @@ pub struct MyEvolutionaryAlgorithm {
     prev_num_ca_steps: u32,
 
     gene_counts: Vec<u32>,
+    gene_distribution: Vec<f32>,
 }
 
 impl Phenotype for MyPhenotype {}
@@ -309,12 +311,15 @@ impl MyEvolutionaryAlgorithm {
 
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
+        console_error_panic_hook::set_once();
+
         MyEvolutionaryAlgorithm {
             ea: setup_ga(),
             population_stats: None,
             prev_num_evaluations: 0,
             prev_num_ca_steps: 0,
             gene_counts: vec![],
+            gene_distribution: vec![],
         }
     }
 
@@ -386,23 +391,40 @@ impl MyEvolutionaryAlgorithm {
         }
     }
 
-    pub fn gene_distribution(&mut self) -> Box<[f32]> {
-        self.gene_counts.clear();
+    pub fn gene_distribution(&mut self) -> *const f32 {
+        self.gene_distribution.clear();
+        let pop_size = self.ea.population().size() as f32;
 
-        for indiv in self.ea.population().iter() {
-            let genotype = indiv.genotype();
+        if pop_size > 0.0 {
+            self.gene_counts.clear();
+            self.gene_counts.extend(
+                (0..self.ea.population().get_individual(0).genotype().bits.len())
+                    .map(|_| 0)
+            );
 
-            for (index, gene) in genotype.bits.iter().enumerate() {
-                if gene {
-                    self.gene_counts[index] += 1;
+            for indiv in self.ea.population().iter() {
+                let genotype = indiv.genotype();
+    
+                for (index, gene) in genotype.bits.iter().enumerate() {
+                    if gene {
+                        self.gene_counts[index] += 1;
+                    }
                 }
+            }
+    
+            if pop_size > 0.0 {
+                self.gene_distribution.extend(
+                    self.gene_counts
+                        .iter()
+                        .map(|x| *x as f32 / pop_size)
+                )
             }
         }
 
-        self.gene_counts
-            .iter()
-            .map(|x| *x as f32 / self.ea.population().size() as f32)
-            .collect::<Vec<f32>>()
-            .into_boxed_slice()
+        self.gene_distribution.as_ptr()
+    }
+
+    pub fn genotype_len(&self) -> u32 {
+        self.gene_counts.len() as u32
     }
 }
