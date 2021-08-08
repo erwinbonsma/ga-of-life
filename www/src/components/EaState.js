@@ -21,6 +21,14 @@ export function EaState({ eaState }) {
                 <Col className="Label" xs={8}>Max. fitness</Col>
                 <Col className="NumValue" xs={4}>{eaState.maxFitness}</Col>
             </Row>
+            <Row>
+                <Col className="Label" xs={8}>Run time [s]</Col>
+                <Col className="NumValue" xs={4}>{eaState.runTime}</Col>
+            </Row>
+            <Row>
+                <Col className="Label" xs={8}>CA steps [s<sup>-1</sup>]</Col>
+                <Col className="NumValue" xs={4}>{Math.round(eaState.caSteps / eaState.runTime)}</Col>
+            </Row>
         </Container>
-    ) || null);
+    )) || null;
 }

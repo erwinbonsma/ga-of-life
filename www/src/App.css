@@ -27,4 +27,6 @@ h3 {
 
 .NumValue {
 	text-align: right;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }

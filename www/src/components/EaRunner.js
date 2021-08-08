@@ -9,6 +9,7 @@ export function EaRunner({ onStep }) {
     const [isRunning, setIsRunning] = useState(false);
     const [executeStep, setExecuteStep] = useState(false);
     const [eaRunner, setEaRunner] = useState();
+    const [runTime, setRunTime] = useState(0);
 
     const onStartClick = () => {
         setAutoRun(true);
@@ -43,14 +44,18 @@ export function EaRunner({ onStep }) {
             if (executeStep || autoRun) {
                 setExecuteStep(false);
                 setIsRunning(true);
+                const startStep = new Date().getTime();
 
                 eaRunner.step().then(results => {
+                    const endStep = new Date().getTime();
+                    const newRunTime = runTime + (endStep - startStep);
                     setIsRunning(false);
-                    onStep?.(results);
+                    setRunTime(runTime => runTime + (endStep - startStep));
+                    onStep?.({ ...results, runTime: Math.round(newRunTime / 1000) });
                 });
             }
         }
-    }, [isRunning, executeStep, autoRun, eaRunner, onStep]);
+    }, [isRunning, executeStep, autoRun, eaRunner, runTime, onStep]);
 
     return (
         <div>
