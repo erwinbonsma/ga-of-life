@@ -24,11 +24,6 @@ export function EaGraph({ eaState }) {
             }
             chart.series[0].addPoint([eaState.generations, eaState.maxFitness], true, shift);
             chart.series[1].addPoint([eaState.generations, eaState.evaluationsDelta], true, shift);
-            if (eaState.evaluationsDelta > 0) {
-                chart.series[2].addPoint(
-                    [eaState.generations, eaState.caStepsDelta / eaState.evaluationsDelta], true, shift
-                );
-            }
         }
     }, [eaState, history, chart])
 
@@ -36,7 +31,7 @@ export function EaGraph({ eaState }) {
         setChart(
             Highcharts.chart('ea-graph', {
                 title: {
-                    text: "Fitness",
+                    text: "Evolutionary Algorithm",
                 },
                 yAxis: [{
                     title: {
@@ -57,13 +52,6 @@ export function EaGraph({ eaState }) {
                     },
                     {
                         name: 'Num. evaluations',
-                        type: 'line',
-                        marker: { enabled: false },
-                        yAxis: 1,
-                        data: [],
-                    },
-                    {
-                        name: 'CA steps per evaluation',
                         type: 'line',
                         marker: { enabled: false },
                         yAxis: 1,
