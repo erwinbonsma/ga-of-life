@@ -91,7 +91,7 @@ function seedCa(ca, seed) {
     const xy0 = (GRID_SIZE - SEED_SIZE) / 2;
     for (let x = 0; x < SEED_SIZE; x++) {
         for (let y = 0; y < SEED_SIZE; y++) {
-            if (seed.charAt(x + y * (SEED_SIZE + 1)) !== ' ') {
+            if (seed.charAt(x + y * SEED_SIZE) !== '0') {
                 ca.set(x + xy0, y + xy0);
             }
         }

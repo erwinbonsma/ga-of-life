@@ -105,7 +105,5 @@ export function GenotypePlot({ genotype, plotId }) {
         }
     }, [plotSettings, plotId, genotype]);
 
-    return (<div>
-        <canvas id={plotId} height={200}></canvas>
-    </div>);
+    return <canvas id={plotId} height={200}></canvas>;
 }

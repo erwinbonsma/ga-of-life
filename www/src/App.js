@@ -8,6 +8,7 @@ import { EaGraph } from './components/EaGraph';
 import { EaRunner } from './components/EaRunner';
 import { CaRunner } from './components/CaRunner';
 import { GenotypePlot } from './components/GenotypePlot';
+import { PhenotypePlot } from './components/PhenotypePlot';
 
 function App() {
   const [eaState, setEaState] = useState();
@@ -48,7 +49,7 @@ function App() {
           </Col>
           <Col>
             <h3>Best phenotype</h3>
-            { eaState && <pre>{eaState.bestPhenotype}</pre>}
+            <PhenotypePlot phenotype={eaState?.bestPhenotype} plotId="best-phenotype" />
           </Col>
         </Row>
       </Container>

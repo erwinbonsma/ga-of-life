@@ -375,6 +375,10 @@ impl MyEvolutionaryAlgorithm {
         if let Some(stats) = &self.population_stats {
             if let Some(phenotype) = &stats.best_indiv.phenotype() {
                 return format!("{}", phenotype.bit_grid)
+                    .chars()
+                    .filter(|ch| *ch != '\n')
+                    .map(|ch| if ch == ' ' { '0' } else { '1' })
+                    .collect::<String>()
             }
         }
         String::from("None")
