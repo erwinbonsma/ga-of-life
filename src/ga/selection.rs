@@ -69,7 +69,7 @@ impl<G: Genotype, P: Phenotype> Selection<G, P> for ElitismSelection<G, P> {
             self.ranking = Vec::from_iter(0..population.size());
         }
 
-        self.ranking.sort_by(
+        self.ranking.sort_unstable_by(
             |a, b| population.get_individual(*b).fitness.unwrap_or(0.0).partial_cmp(
                 &population.get_individual(*a).fitness.unwrap_or(0.0)
             ).unwrap()
