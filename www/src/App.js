@@ -14,8 +14,29 @@ function App() {
 
   return (
     <div className="App">
-      <EaRunner onStep={setEaState}></EaRunner>
+
       <Container>
+        <Row>
+          <Col lg={4} xs={6}>
+            <Container>
+              <Row>
+                <Col><EaRunner onStep={setEaState}></EaRunner></Col>
+              </Row>
+              <Row>
+                <Col>
+                  { eaState && <p>
+                    Generation = {eaState.generations}<br></br>
+                    #Evaluations = {eaState.evaluations}<br></br>
+                    #CA steps = {eaState.caSteps}<br></br>
+                    Best = {eaState.maxFitness}</p>}
+                </Col>
+              </Row>
+            </Container>            
+          </Col>
+          <Col lg={8} xs={12}>
+            <EaGraph eaState={eaState} />
+          </Col>
+        </Row>
         <Row>
           <Col>
             <h3>Gene distribution</h3>
@@ -26,17 +47,11 @@ function App() {
             <GenotypePlot genotype={eaState?.bestGenotype} plotId="best-genotype" />
           </Col>
           <Col>
-            { eaState && <>
-              <p>Generation = {eaState.generations}, 
-              #Evaluations = {eaState.evaluations},
-              #CA steps = {eaState.caSteps},
-              Best = {eaState.maxFitness}</p>
-              <pre>{eaState.bestPhenotype}</pre>
-            </>}
+            <h3>Best phenotype</h3>
+            { eaState && <pre>{eaState.bestPhenotype}</pre>}
           </Col>
         </Row>
       </Container>
-      <EaGraph eaState={eaState} />
       <CaRunner seed={eaState?.bestPhenotype} />
     </div>
   );
