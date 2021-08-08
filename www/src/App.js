@@ -6,6 +6,7 @@ import Row from 'react-bootstrap/Row';
 
 import { EaGraph } from './components/EaGraph';
 import { EaRunner } from './components/EaRunner';
+import { EaState } from './components/EaState';
 import { CaRunner } from './components/CaRunner';
 import { GenotypePlot } from './components/GenotypePlot';
 import { PhenotypePlot } from './components/PhenotypePlot';
@@ -24,13 +25,7 @@ function App() {
                 <Col><EaRunner onStep={setEaState}></EaRunner></Col>
               </Row>
               <Row>
-                <Col>
-                  { eaState && <p>
-                    Generation = {eaState.generations}<br></br>
-                    #Evaluations = {eaState.evaluations}<br></br>
-                    #CA steps = {eaState.caSteps}<br></br>
-                    Best = {eaState.maxFitness}</p>}
-                </Col>
+                <EaState eaState={eaState} />
               </Row>
             </Container>            
           </Col>
