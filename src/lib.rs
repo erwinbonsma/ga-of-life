@@ -78,6 +78,9 @@ pub struct MyEvolutionaryAlgorithm {
 
     gene_counts: Vec<u32>,
     gene_distribution: Vec<f32>,
+
+    cell_counts: Vec<u32>,
+    cell_distribution: Vec<f32>,
 }
 
 impl Phenotype for MyPhenotype {}
@@ -320,6 +323,8 @@ impl MyEvolutionaryAlgorithm {
             prev_num_ca_steps: 0,
             gene_counts: vec![],
             gene_distribution: vec![],
+            cell_counts: vec![],
+            cell_distribution: vec![],
         }
     }
 
@@ -397,38 +402,72 @@ impl MyEvolutionaryAlgorithm {
 
     pub fn gene_distribution(&mut self) -> *const f32 {
         self.gene_distribution.clear();
-        let pop_size = self.ea.population().size() as f32;
+        let mut num_genotypes = 0;
 
-        if pop_size > 0.0 {
-            self.gene_counts.clear();
-            self.gene_counts.extend(
-                (0..self.ea.population().get_individual(0).genotype().bits.len())
-                    .map(|_| 0)
-            );
+        self.gene_counts.clear();
+        self.gene_counts.extend(
+            (0..self.ea.population().get_individual(0).genotype().bits.len())
+                .map(|_| 0)
+        );
 
-            for indiv in self.ea.population().iter() {
-                let genotype = indiv.genotype();
-    
-                for (index, gene) in genotype.bits.iter().enumerate() {
-                    if gene {
-                        self.gene_counts[index] += 1;
-                    }
+        for indiv in self.ea.population().iter() {
+            let genotype = indiv.genotype();
+            num_genotypes += 1;
+
+            for (index, gene) in genotype.bits.iter().enumerate() {
+                if gene {
+                    self.gene_counts[index] += 1;
                 }
             }
-    
-            if pop_size > 0.0 {
-                self.gene_distribution.extend(
-                    self.gene_counts
-                        .iter()
-                        .map(|x| *x as f32 / pop_size)
-                )
-            }
         }
+
+        self.gene_distribution.extend(
+            self.gene_counts
+                .iter()
+                .map(|x| *x as f32 / num_genotypes as f32)
+        );
 
         self.gene_distribution.as_ptr()
     }
 
     pub fn genotype_len(&self) -> u32 {
         self.gene_counts.len() as u32
+    }
+
+    pub fn cell_distribution(&mut self) -> *const f32 {
+        self.cell_distribution.clear();
+        let mut num_phenotypes = 0;
+
+        self.cell_counts.clear();
+        self.cell_counts.extend((0..TOTAL_SEED_CELLS).map(|_| 0));
+
+        for indiv in self.ea.population().iter() {
+            if let Some(phenotype) = indiv.phenotype() {
+                let mut cell_index = 0;
+                for y in 0..SEED_PATCH_SIZE {
+                    for x in 0..SEED_PATCH_SIZE {
+                        if phenotype.bit_grid.get(x, y) {
+                            self.cell_counts[cell_index] += 1;
+                        }
+                        cell_index += 1;
+                    }
+                }
+                num_phenotypes += 1;
+            }
+        }
+
+        if num_phenotypes > 0 {
+            self.cell_distribution.extend(
+                self.cell_counts
+                    .iter()
+                    .map(|x| *x as f32 / num_phenotypes as f32)
+            )
+        }
+
+        self.cell_distribution.as_ptr()
+    }
+
+    pub fn phenotype_len(&self) -> u32 {
+        self.cell_counts.len() as u32
     }
 }

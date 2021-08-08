@@ -1,3 +1,4 @@
+
 let ea;
 let memory;
 export async function init() {
@@ -26,5 +27,6 @@ export function step() {
         bestGenotype: ea.best_genotype(),
         bestPhenotype: ea.best_phenotype(),
         geneDistribution: new Float32Array(memory.buffer, ea.gene_distribution(), ea.genotype_len()),
+        cellDistribution: new Float32Array(memory.buffer, ea.cell_distribution(), ea.phenotype_len()),
     }
 }
