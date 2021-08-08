@@ -15,10 +15,17 @@ function App() {
   return (
     <div className="App">
       <EaRunner onStep={setEaState}></EaRunner>
-
       <Container>
         <Row>
-          <Col xs={4}>
+          <Col>
+            <h3>Gene distribution</h3>
+            <GenotypePlot genotype={eaState?.geneDistribution} plotId="gene-distribution" />
+          </Col>
+          <Col>
+            <h3>Best genotype</h3>
+            <GenotypePlot genotype={eaState?.bestGenotype} plotId="best-genotype" />
+          </Col>
+          <Col>
             { eaState && <>
               <p>Generation = {eaState.generations}, 
               #Evaluations = {eaState.evaluations},
@@ -26,12 +33,6 @@ function App() {
               Best = {eaState.maxFitness}</p>
               <pre>{eaState.bestPhenotype}</pre>
             </>}
-          </Col>
-          <Col xs={4}>
-            <GenotypePlot genotype={eaState?.bestGenotype} plotId="best-genotype" />
-          </Col>
-          <Col xs={4}>
-            <GenotypePlot genotype={eaState?.geneDistribution} plotId="gene-distribution" />
           </Col>
         </Row>
       </Container>
