@@ -13,8 +13,6 @@ function fillStyle(intensity) {
 function drawPhenotype(ctx, phenotype, plotSettings) {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    console.info({ phenotype });
-
     let index = 0;
     let x = 0;
     let y = 0;
