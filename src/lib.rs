@@ -31,6 +31,7 @@ use ga::binary::{
     BinaryUniformRecombination,
 };
 use ga::selection::{
+    ElitismSelection,
     TournamentSelection,
 };
 
@@ -287,15 +288,20 @@ impl GenotypeManipulation<BinaryChromosome> for MyConfig {
 
 impl GenotypeConfig<BinaryChromosome> for MyConfig {}
 
-pub fn setup_ga() -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
+pub fn setup_ga(elitism: bool) -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
     let expressor = MyNeutralExpressor::new(4);
+    let main_selector = Box::new(TournamentSelection::new(2));
 
     EvolutionaryAlgorithm::new(
         100,
         Box::new(MyConfig::new(expressor.genotype_length())),
         Box::new(expressor),
         Box::new(MyEvaluator::new()),
-        Box::new(TournamentSelection::new(2))
+        if elitism {
+            Box::new(ElitismSelection::new(1, main_selector))
+        } else {
+            main_selector
+        }
     ).set_mutation_prob(
         0.9
     ).set_recombination_prob(
@@ -317,7 +323,7 @@ impl MyEvolutionaryAlgorithm {
         console_error_panic_hook::set_once();
 
         MyEvolutionaryAlgorithm {
-            ea: setup_ga(),
+            ea: setup_ga(true),
             population_stats: None,
             prev_num_evaluations: 0,
             prev_num_ca_steps: 0,
