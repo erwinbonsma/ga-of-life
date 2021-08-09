@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
+import Col from 'react-bootstrap/Col';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
 import { GRID_SIZE, SEED_SIZE } from '../shared/Constants';
 
 const CELL_SIZE = 4;
@@ -150,13 +153,21 @@ export function CaRunner({ seed }) {
         }
     });
 
-    return (<div>
-        <Button onClick={onSeedClick} disabled={!ca}>Seed</Button>
-        <Button onClick={onStepClick} disabled={!ca || autoPlay}>Step</Button>
-        <Button onClick={onTogglePlayClick} disabled={!ca || autoPlay}>Play</Button>
-        <Button onClick={onTogglePlayClick} disabled={!(ca && autoPlay)}>Pause</Button>
-        <canvas id="ca-canvas"
-            width={(CELL_SIZE + 1) * GRID_SIZE}
-            height={(CELL_SIZE + 1) * GRID_SIZE}></canvas>
-    </div>);
+    return (<Container>
+        <Row>
+            <Col>
+                <Button onClick={onSeedClick} disabled={!ca}>Seed</Button>
+                <Button onClick={onStepClick} disabled={!ca || autoPlay}>Step</Button>
+                <Button onClick={onTogglePlayClick} disabled={!ca || autoPlay}>Play</Button>
+                <Button onClick={onTogglePlayClick} disabled={!(ca && autoPlay)}>Pause</Button>
+            </Col>
+        </Row>
+        <Row>
+            <Col>
+                <canvas id="ca-canvas"
+                    width={(CELL_SIZE + 1) * GRID_SIZE}
+                    height={(CELL_SIZE + 1) * GRID_SIZE}></canvas>
+            </Col>
+        </Row>
+    </Container>);
 }
