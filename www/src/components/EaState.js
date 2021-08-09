@@ -27,7 +27,7 @@ export function EaState({ eaState }) {
             </Row>
             <Row>
                 <Col className="Label" xs={8}>CA steps [s<sup>-1</sup>]</Col>
-                <Col className="NumValue" xs={4}>{Math.round(eaState.caSteps / eaState.runTime)}</Col>
+                <Col className="NumValue" xs={4}>{eaState.runTime > 0 ? Math.round(eaState.caSteps / eaState.runTime) : "-"}</Col>
             </Row>
         </Container>
     )) || null;
