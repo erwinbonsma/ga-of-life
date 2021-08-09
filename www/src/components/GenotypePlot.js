@@ -68,11 +68,11 @@ export function GenotypePlot({ genotype, plotId }) {
     const [plotSettings, setPlotSettings] = useState();
 
     useEffect(() => {
-        if (plotSettings) {
+        const canvas = document.getElementById(plotId);
+        if (canvas.width === plotSettings?.canvasWidth) {
             return;
         }
 
-        const canvas = document.getElementById(plotId);
         const horizontalCellSpacing = (SEED_SIZE + 1) * S1;
         const horizontalCellSpace = canvas.width - horizontalCellSpacing;
         const verticalCellSpacing = (SEED_SIZE + 3) * S1 + S3;
@@ -85,6 +85,7 @@ export function GenotypePlot({ genotype, plotId }) {
         const width = horizontalCellSpacing + SEED_SIZE * bigCellSize;
         const height = verticalCellSpacing + (SEED_SIZE + 2) * bigCellSize;
         const settings = {
+            canvasWidth: canvas.width,
             cellSize,
             x0: Math.floor((canvas.width - width) / 2),
             y0: Math.floor((canvas.height - height) / 2),
@@ -113,5 +114,7 @@ export function GenotypePlot({ genotype, plotId }) {
         }
     }, [plotSettings, plotId, genotype]);
 
-    return <canvas id={plotId} height={200}></canvas>;
+    return <div className="plot-container">
+        <canvas className="plot" id={plotId} height={200}></canvas>
+    </div>;
 }

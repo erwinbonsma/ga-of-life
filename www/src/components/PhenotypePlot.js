@@ -78,5 +78,7 @@ export function PhenotypePlot({ phenotype, plotId }) {
         }
     }, [plotSettings, plotId, phenotype]);
 
-    return <canvas id={plotId} height={200}></canvas>;
+    return <div className="plot-container">
+        <canvas className="plot" id={plotId} height={200}></canvas>
+    </div>;
 }
