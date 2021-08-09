@@ -103,12 +103,12 @@ function seedCa(ca, seed) {
 
 export function CaRunner({ seed }) {
     const [ca, setCa] = useState();
-    const [toggled, setToggled] = useState(new Array(GRID_SIZE * GRID_SIZE));
+    const [toggled, _] = useState(new Array(GRID_SIZE * GRID_SIZE));
     const [autoPlay, setAutoPlay] = useState();
     const [scheduleStep, setScheduleStep] = useState(0);
 
     const clearToggled = () => {
-        setToggled(new Array(GRID_SIZE * GRID_SIZE));
+        toggled.forEach((_, i, a) => { a[i] = 0; });
     }
 
     const onSeedClick = () => {
@@ -156,10 +156,10 @@ export function CaRunner({ seed }) {
     return (<Container>
         <Row>
             <Col>
-                <Button onClick={onSeedClick} disabled={!ca}>Seed</Button>
-                <Button onClick={onStepClick} disabled={!ca || autoPlay}>Step</Button>
+                <Button onClick={onSeedClick} disabled={!ca || autoPlay}>Seed</Button>
                 <Button onClick={onTogglePlayClick} disabled={!ca || autoPlay}>Play</Button>
                 <Button onClick={onTogglePlayClick} disabled={!(ca && autoPlay)}>Pause</Button>
+                <Button onClick={onStepClick} disabled={!ca || autoPlay}>Step</Button>
             </Col>
         </Row>
         <Row>
