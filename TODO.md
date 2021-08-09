@@ -16,7 +16,6 @@ Cellular Automata
 Web front-end
 -------------
 
-- Add "Reset" GA button
 - Add Generation Step GA run configuration (to only update UI every X generations)
 - Make key GA parameters configurable
     - Pop.size, tournament size, elitism [yes/no], mutation rate, recombination rate
@@ -24,7 +23,6 @@ Web front-end
     - num alive cells
     - num once-alive cells
 - Look & Feel
-    - Improve layout
     - Improve theming
 
 - Reduce WASM size
