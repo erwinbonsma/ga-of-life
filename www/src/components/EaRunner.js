@@ -11,6 +11,13 @@ export function EaRunner({ onStep }) {
     const [eaRunner, setEaRunner] = useState();
     const [runTime, setRunTime] = useState(0);
 
+    const onResetClick = () => {
+        eaRunner.reset();
+        setRunTime(0);
+
+        // Notify observers that EA was reset
+        onStep?.(null);
+    }
     const onStartClick = () => {
         setAutoRun(true);
     }
@@ -59,6 +66,7 @@ export function EaRunner({ onStep }) {
 
     return (
         <div>
+            <Button onClick={onResetClick} disabled={isRunning || autoRun}>Reset</Button>
             <Button onClick={onStartClick} disabled={isRunning || autoRun}>Run</Button>
             <Button onClick={onPauseClick} disabled={!autoRun}>Pause</Button>
             <Button onClick={onStepClick} disabled={isRunning || autoRun}>Step</Button>

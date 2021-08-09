@@ -9,25 +9,7 @@ export function EaGraph({ eaState }) {
     const [history, setHistory] = useState([]);
     const [chart, setChart] = useState();
 
-    useEffect(() => {
-        if (chart && eaState?.generations !== history[history.length - 1]?.generations) {
-            var shift = false;
-            if (history.length < historyLen) {
-                setHistory([
-                    ...history, eaState
-                ]);
-            } else {
-                setHistory([
-                    ...history.slice(1, historyLen), eaState
-                ]);
-                shift = true;
-            }
-            chart.series[0].addPoint([eaState.generations, eaState.maxFitness], true, shift);
-            chart.series[1].addPoint([eaState.generations, eaState.evaluationsDelta], true, shift);
-        }
-    }, [eaState, history, chart])
-
-    useEffect(() => {
+    const initChart = function() {
         setChart(
             Highcharts.chart('ea-graph', {
                 title: {
@@ -60,6 +42,42 @@ export function EaGraph({ eaState }) {
                 ]
             })
         );
+    };
+
+    useEffect(() => {
+        if (!chart) {
+            return
+        }
+        if (!eaState) {
+            // EA was reset. Reset graph, if not yet already done.
+            if (history.length > 0) {
+                setHistory([]);
+
+                chart.destroy();
+                initChart();
+            }
+        } else {
+            // Add EA state to graph, if not yet already done.
+            if (eaState?.generations !== history[history.length - 1]?.generations) {
+                var shift = false;
+                if (history.length < historyLen) {
+                    setHistory([
+                        ...history, eaState
+                    ]);
+                } else {
+                    setHistory([
+                        ...history.slice(1, historyLen), eaState
+                    ]);
+                    shift = true;
+                }
+                chart.series[0].addPoint([eaState.generations, eaState.maxFitness], true, shift);
+                chart.series[1].addPoint([eaState.generations, eaState.evaluationsDelta], true, shift);
+            }
+        }
+    }, [eaState, history, chart])
+
+    useEffect(() => {
+        initChart();
     }, []);
 
     return (

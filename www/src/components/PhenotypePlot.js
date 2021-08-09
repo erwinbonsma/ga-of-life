@@ -10,9 +10,11 @@ function fillStyle(intensity) {
     return `rgb(${boundedIntensity}, ${boundedIntensity}, ${boundedIntensity})`;
 }
 
-function drawPhenotype(ctx, phenotype, plotSettings) {
+function clearPlot(ctx, plotSettings) {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+}
 
+function drawPhenotype(ctx, plotSettings, phenotype) {
     let index = 0;
     let x = 0;
     let y = 0;
@@ -62,11 +64,17 @@ export function PhenotypePlot({ phenotype, plotId }) {
     }, [plotSettings, plotId]);
 
     useEffect(() => {
+        if (!plotSettings) {
+            return;
+        }
+
         const canvas = document.getElementById(plotId);
         const ctx = canvas.getContext('2d');
 
-        if (phenotype && plotSettings) {
-            drawPhenotype(ctx, phenotype, plotSettings);
+        if (phenotype) {
+            drawPhenotype(ctx, plotSettings, phenotype);
+        } else {
+            clearPlot(ctx, plotSettings);
         }
     }, [plotSettings, plotId, phenotype]);
 

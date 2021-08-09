@@ -334,6 +334,13 @@ impl MyEvolutionaryAlgorithm {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.population_stats = None;
+        self.prev_num_evaluations = 0;
+        self.prev_num_ca_steps = 0;
+        self.ea = setup_ga(true);
+    }
+
     pub fn step(&mut self) {
         self.prev_num_evaluations = self.ea.num_evaluations();
         self.prev_num_ca_steps = self.num_ca_steps();

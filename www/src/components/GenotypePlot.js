@@ -14,11 +14,13 @@ function fillStyle(intensity) {
     return `rgb(${(1 - boundedIntensity) * 255}, ${boundedIntensity * 255}, 0)`;
 }
 
-function drawGenotype(ctx, genotype, plotSettings) {
+function clearPlot(ctx, plotSettings) {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.fillStyle = "#A0A0A0";
     ctx.fillRect(plotSettings.x0, plotSettings.y0, plotSettings.width, plotSettings.height);
+}
 
+function drawGenotype(ctx, plotSettings, genotype) {
     let index = 0;
     let x = 0;
     let y = 0;
@@ -97,11 +99,17 @@ export function GenotypePlot({ genotype, plotId }) {
     }, [plotSettings, plotId]);
 
     useEffect(() => {
+        if (!plotSettings) {
+            return;
+        }
+
         const canvas = document.getElementById(plotId);
         const ctx = canvas.getContext('2d');
 
-        if (genotype && plotSettings) {
-            drawGenotype(ctx, genotype, plotSettings);
+        if (genotype) {
+            drawGenotype(ctx, plotSettings, genotype);
+        } else {
+            clearPlot(ctx, plotSettings);
         }
     }, [plotSettings, plotId, genotype]);
 

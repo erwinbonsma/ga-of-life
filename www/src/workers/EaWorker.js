@@ -13,6 +13,10 @@ export async function init() {
     return ea;
 };
 
+export function reset() {
+    ea.reset();
+}
+
 export function step() {
     ea.step();
 
