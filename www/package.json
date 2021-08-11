@@ -1,5 +1,6 @@
 {
-  "name": "react-app",
+  "name": "ga-of-life",
+  "homepage": "www/ga-of-life",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
