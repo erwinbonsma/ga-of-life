@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NUM_GENOTYPE_GROUPS, SEED_SIZE } from '../shared/Constants';
 
 // Separation between the big cells
@@ -64,11 +64,12 @@ function drawGenotype(ctx, plotSettings, genotype) {
     }
 }
 
-export function GenotypePlot({ genotype, plotId }) {
+export function GenotypePlot({ genotype }) {
     const [plotSettings, setPlotSettings] = useState();
+    const canvasRef = useRef(null);
 
     useEffect(() => {
-        const canvas = document.getElementById(plotId);
+        const canvas = canvasRef.current;
         if (canvas.width === plotSettings?.canvasWidth) {
             return;
         }
@@ -97,24 +98,23 @@ export function GenotypePlot({ genotype, plotId }) {
         console.info("Plot settings:", settings);
 
         setPlotSettings(settings);
-    }, [plotSettings, plotId]);
+    }, [plotSettings]);
 
     useEffect(() => {
         if (!plotSettings) {
             return;
         }
 
-        const canvas = document.getElementById(plotId);
-        const ctx = canvas.getContext('2d');
+        const ctx = canvasRef.current.getContext('2d');
 
         if (genotype) {
             drawGenotype(ctx, plotSettings, genotype);
         } else {
             clearPlot(ctx, plotSettings);
         }
-    }, [plotSettings, plotId, genotype]);
+    }, [plotSettings, genotype]);
 
     return <div className="plot-container">
-        <canvas className="plot" id={plotId} height={200}></canvas>
+        <canvas className="plot" ref={canvasRef} height={200}></canvas>
     </div>;
 }

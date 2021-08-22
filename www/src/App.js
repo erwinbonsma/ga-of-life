@@ -36,19 +36,19 @@ function App() {
         <Row>
           <Col lg={3}>
             <h3>Gene distribution</h3>
-            <GenotypePlot genotype={eaState?.geneDistribution} plotId="gene-distribution" />
+            <GenotypePlot genotype={eaState?.geneDistribution} />
           </Col>
           <Col lg={3}>
             <h3>Best genotype</h3>
-            <GenotypePlot genotype={eaState?.bestGenotype} plotId="best-genotype" />
+            <GenotypePlot genotype={eaState?.bestGenotype} />
           </Col>
           <Col lg={3}>
             <h3>Cell distribution</h3>
-            <PhenotypePlot phenotype={eaState?.cellDistribution} plotId="cell-distribution" />
+            <PhenotypePlot phenotype={eaState?.cellDistribution} />
           </Col>
           <Col lg={3}>
             <h3>Best phenotype</h3>
-            <PhenotypePlot phenotype={eaState?.bestPhenotype} plotId="best-phenotype" />
+            <PhenotypePlot phenotype={eaState?.bestPhenotype} />
           </Col>
         </Row>
       </Container>

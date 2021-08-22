@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SEED_SIZE } from '../shared/Constants';
 
 // Separation between the cells
@@ -33,15 +33,16 @@ function drawPhenotype(ctx, plotSettings, phenotype) {
     }
 }
 
-export function PhenotypePlot({ phenotype, plotId }) {
+export function PhenotypePlot({ phenotype }) {
     const [plotSettings, setPlotSettings] = useState();
+    const canvasRef = useRef(null);
 
     useEffect(() => {
         if (plotSettings) {
             return;
         }
 
-        const canvas = document.getElementById(plotId);
+        const canvas = canvasRef.current;
         const cellSpacing = (SEED_SIZE - 1) * S1;
         const horizontalCellSpace = canvas.width - cellSpacing;
         const verticalCellSpace = canvas.height - cellSpacing;
@@ -61,24 +62,23 @@ export function PhenotypePlot({ phenotype, plotId }) {
         console.info("Plot settings:", settings);
 
         setPlotSettings(settings);
-    }, [plotSettings, plotId]);
+    }, [plotSettings]);
 
     useEffect(() => {
         if (!plotSettings) {
             return;
         }
 
-        const canvas = document.getElementById(plotId);
-        const ctx = canvas.getContext('2d');
+        const ctx = canvasRef.current.getContext('2d');
 
         if (phenotype) {
             drawPhenotype(ctx, plotSettings, phenotype);
         } else {
             clearPlot(ctx, plotSettings);
         }
-    }, [plotSettings, plotId, phenotype]);
+    }, [plotSettings, phenotype]);
 
     return <div className="plot-container">
-        <canvas className="plot" id={plotId} height={200}></canvas>
+        <canvas className="plot" ref={canvasRef} height={200}></canvas>
     </div>;
 }
