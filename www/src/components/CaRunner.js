@@ -102,24 +102,24 @@ function seedCa(ca, seed) {
 
 export function CaRunner({ seed }) {
     const [ca, setCa] = useState();
-    const [toggled, _] = useState(new Array(GRID_SIZE * GRID_SIZE));
     const [autoPlay, setAutoPlay] = useState();
     const [scheduleStep, setScheduleStep] = useState(0);
+    const toggledRef = useRef(new Array(GRID_SIZE * GRID_SIZE));
     const canvasRef = useRef(null);
 
     const clearToggled = () => {
-        toggled.forEach((_, i, a) => { a[i] = 0; });
+        toggledRef.current.forEach((_, i, a) => { a[i] = 0; });
     }
 
     const onSeedClick = () => {
         clearToggled();
         seedCa(ca, seed);
 
-        drawCells(drawContext(canvasRef), ca, toggled);
+        drawCells(drawContext(canvasRef), ca, toggledRef.current);
     }
 
     const onStepClick = () => {
-        executeStep(ca, toggled, drawContext(canvasRef));
+        executeStep(ca, toggledRef.current, drawContext(canvasRef));
     }
     const onTogglePlayClick = () => {
         setAutoPlay(!autoPlay);
@@ -136,12 +136,12 @@ export function CaRunner({ seed }) {
         } else {
             drawGrid(drawContext(canvasRef));
         }
-    }, [ca, toggled]);
+    }, [ca]);
 
     useEffect(() => {
         if (autoPlay) {
             const timer = setTimeout(() => {
-                executeStep(ca, toggled, drawContext(canvasRef));
+                executeStep(ca, toggledRef.current, drawContext(canvasRef));
                 // Trigger next update
                 setScheduleStep(scheduleStep + 1);
             }, 10);
