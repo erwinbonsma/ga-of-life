@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
@@ -67,9 +67,8 @@ function drawCells(ctx, ca, toggled) {
     ctx.stroke();
 }
 
-function drawContext() {
-    const canvas = document.getElementById("ca-canvas");
-    return canvas.getContext('2d');
+function drawContext(canvasRef) {
+    return canvasRef?.current?.getContext('2d');
 }
 
 function updateToggled(ca, toggled) {
@@ -82,10 +81,10 @@ function updateToggled(ca, toggled) {
     }
 }
 
-function executeStep(ca, toggled) {
+function executeStep(ca, toggled, ctx) {
     ca.step();
     updateToggled(ca, toggled);
-    drawCells(drawContext(), ca, toggled);
+    drawCells(ctx, ca, toggled);
 }
 
 function seedCa(ca, seed) {
@@ -106,6 +105,7 @@ export function CaRunner({ seed }) {
     const [toggled, _] = useState(new Array(GRID_SIZE * GRID_SIZE));
     const [autoPlay, setAutoPlay] = useState();
     const [scheduleStep, setScheduleStep] = useState(0);
+    const canvasRef = useRef(null);
 
     const clearToggled = () => {
         toggled.forEach((_, i, a) => { a[i] = 0; });
@@ -115,11 +115,11 @@ export function CaRunner({ seed }) {
         clearToggled();
         seedCa(ca, seed);
 
-        drawCells(drawContext(), ca, toggled);
+        drawCells(drawContext(canvasRef), ca, toggled);
     }
 
     const onStepClick = () => {
-        executeStep(ca, toggled);
+        executeStep(ca, toggled, drawContext(canvasRef));
     }
     const onTogglePlayClick = () => {
         setAutoPlay(!autoPlay);
@@ -134,15 +134,14 @@ export function CaRunner({ seed }) {
         if (!ca) {
             init();
         } else {
-            const ctx = drawContext();
-            drawGrid(ctx);
+            drawGrid(drawContext(canvasRef));
         }
     }, [ca, toggled]);
 
     useEffect(() => {
         if (autoPlay) {
             const timer = setTimeout(() => {
-                executeStep(ca, toggled);
+                executeStep(ca, toggled, drawContext(canvasRef));
                 // Trigger next update
                 setScheduleStep(scheduleStep + 1);
             }, 10);
@@ -164,7 +163,7 @@ export function CaRunner({ seed }) {
         </Row>
         <Row>
             <Col>
-                <canvas id="ca-canvas"
+                <canvas ref={canvasRef}
                     width={(CELL_SIZE + 1) * GRID_SIZE}
                     height={(CELL_SIZE + 1) * GRID_SIZE}></canvas>
             </Col>
