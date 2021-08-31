@@ -1,5 +1,5 @@
 .App {
-  text-align: center;
+  xxx-text-align: center;
 }
 
 .App-header {
@@ -38,4 +38,8 @@ h3 {
 	text-align: right;
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+.NumFormField {
+	text-align: right;
 }

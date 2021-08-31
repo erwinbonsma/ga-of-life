@@ -1,11 +1,12 @@
 import './App.css';
-import { useState } from 'react';
+import { useState, useReducer } from 'react';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 
 import { EaGraph } from './components/EaGraph';
 import { EaRunner } from './components/EaRunner';
+import { EaSettings, SettingsContext, initialSettings, settingsReducer } from './components/EaSettings';
 import { EaState } from './components/EaState';
 import { CaRunner } from './components/CaRunner';
 import { GenotypePlot } from './components/GenotypePlot';
@@ -13,6 +14,7 @@ import { PhenotypePlot } from './components/PhenotypePlot';
 
 function App() {
   const [eaState, setEaState] = useState();
+  const [eaSettings, eaSettingsDispatch] = useReducer(settingsReducer, initialSettings);
 
   return (
     <div className="App">
@@ -20,14 +22,20 @@ function App() {
       <Container>
         <Row>
           <Col lg={4} xs={6}>
-            <Container>
-              <Row>
-                <Col><EaRunner onStep={setEaState}></EaRunner></Col>
-              </Row>
-              <Row>
-                <EaState eaState={eaState} />
-              </Row>
-            </Container>            
+            <SettingsContext.Provider value={{
+              settings: eaSettings,
+              dispatch: eaSettingsDispatch
+            }}>
+              <EaSettings />
+              <Container>
+                <Row>
+                  <Col><EaRunner onStep={setEaState}></EaRunner></Col>
+                </Row>
+                <Row>
+                  <EaState eaState={eaState} />
+                </Row>
+              </Container>
+            </SettingsContext.Provider>
           </Col>
           <Col lg={8} xs={12}>
             <EaGraph eaState={eaState} />
