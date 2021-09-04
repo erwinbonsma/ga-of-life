@@ -37,7 +37,7 @@ export const initialSettings = {
     recombinationRate: 0.4,
     mutationRate: 0.9,
     tournamentSize: 2,
-    elitism: false,
+    elitism: true,
 };
 
 export function EaSettings() {
@@ -80,8 +80,8 @@ export function EaSettings() {
             <Form.Label column sm={6}>Use elitism</Form.Label>
             <Col sm={6}>
                 <Form.Check type="checkbox" 
-                    value={settings.elitism}
-                    onClick={e => dispatch({ type: 'elitism', value: e.target.checked })} />
+                    checked={settings.elitism}
+                    onChange={e => dispatch({ type: 'elitism', value: e.target.checked })} />
             </Col>
         </Form.Group>
     </Form>

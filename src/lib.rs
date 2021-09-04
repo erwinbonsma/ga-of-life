@@ -69,6 +69,17 @@ struct MyConfig {
 }
 
 #[wasm_bindgen]
+#[derive(Debug)]
+// This struct contains the settings that can be modified by the user
+pub struct MyEaSettings {
+    mutation_rate: f32,
+    recombination_rate: f32,
+    population_size: usize,
+    tournament_size: usize,
+    elitism: bool
+}
+
+#[wasm_bindgen]
 pub struct MyEvolutionaryAlgorithm {
     ea: EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype>,
 
@@ -288,24 +299,26 @@ impl GenotypeManipulation<BinaryChromosome> for MyConfig {
 
 impl GenotypeConfig<BinaryChromosome> for MyConfig {}
 
-pub fn setup_ga(elitism: bool) -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
+pub fn setup_ga(settings: &MyEaSettings) -> EvolutionaryAlgorithm<BinaryChromosome, MyPhenotype> {
     let expressor = MyNeutralExpressor::new(4);
-    let main_selector = Box::new(TournamentSelection::new(2));
+    let main_selector = Box::new(TournamentSelection::new(
+        settings.tournament_size
+    ));
 
     EvolutionaryAlgorithm::new(
-        100,
+        settings.population_size,
         Box::new(MyConfig::new(expressor.genotype_length())),
         Box::new(expressor),
         Box::new(MyEvaluator::new()),
-        if elitism {
+        if settings.elitism {
             Box::new(ElitismSelection::new(1, main_selector))
         } else {
             main_selector
         }
     ).set_mutation_prob(
-        0.9
+        settings.mutation_rate
     ).set_recombination_prob(
-        0.4
+        settings.recombination_rate
     ).enable_fitness_cache()
 }
 
@@ -316,14 +329,68 @@ impl MyEvolutionaryAlgorithm {
 }
 
 #[wasm_bindgen]
+impl MyEaSettings {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        MyEaSettings {
+            mutation_rate: 0.9,
+            recombination_rate: 0.4,
+            population_size: 100,
+            tournament_size: 2,
+            elitism: true
+        }
+    }
+
+    pub fn set_mutation_rate(mut self, mutation_rate: f32) -> Self {
+        self.mutation_rate = mutation_rate;
+        self
+    }
+    pub fn mutation_rate(&self) -> f32 {
+        self.mutation_rate
+    }
+
+    pub fn set_recombination_rate(mut self, recombination_rate: f32) -> Self {
+        self.recombination_rate = recombination_rate;
+        self
+    }
+    pub fn recombination_rate(&self) -> f32 {
+        self.recombination_rate
+    }
+
+    pub fn set_population_size(mut self, size: usize) -> Self {
+        self.population_size = size;
+        self
+    }
+    pub fn population_size(&self) -> usize {
+        self.population_size
+    }
+
+    pub fn set_tournament_size(mut self, size: usize) -> Self {
+        self.tournament_size = size;
+        self
+    }
+    pub fn tournament_size(&self) -> usize {
+        self.tournament_size
+    }
+
+    pub fn set_elitism(mut self, elitism: bool) -> Self {
+        self.elitism = elitism;
+        self
+    }
+    pub fn elitism(&self) -> bool {
+        self.elitism
+    }
+}
+
+#[wasm_bindgen]
 impl MyEvolutionaryAlgorithm {
 
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
+    pub fn new(settings: &MyEaSettings) -> Self {
         console_error_panic_hook::set_once();
 
         MyEvolutionaryAlgorithm {
-            ea: setup_ga(true),
+            ea: setup_ga(settings),
             population_stats: None,
             prev_num_evaluations: 0,
             prev_num_ca_steps: 0,
@@ -334,11 +401,11 @@ impl MyEvolutionaryAlgorithm {
         }
     }
 
-    pub fn reset(&mut self) {
+    pub fn reset(&mut self, settings: &MyEaSettings) {
         self.population_stats = None;
         self.prev_num_evaluations = 0;
         self.prev_num_ca_steps = 0;
-        self.ea = setup_ga(true);
+        self.ea = setup_ga(settings);
     }
 
     pub fn step(&mut self) {

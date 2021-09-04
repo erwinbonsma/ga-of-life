@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import Button from 'react-bootstrap/Button';
+
+import { initialSettings, SettingsContext } from './EaSettings';
 
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import worker from 'workerize-loader!../workers/EaWorker';
 
 export function EaRunner({ onStep }) {
+    const { settings } = useContext(SettingsContext);
     const [autoRun, setAutoRun] = useState(false);
     const [isRunning, setIsRunning] = useState(false);
     const [executeStep, setExecuteStep] = useState(false);
@@ -12,7 +15,7 @@ export function EaRunner({ onStep }) {
     const [runTime, setRunTime] = useState(0);
 
     const onResetClick = () => {
-        eaRunner.reset();
+        eaRunner.reset(settings);
         setRunTime(0);
 
         // Notify observers that EA was reset
@@ -33,7 +36,7 @@ export function EaRunner({ onStep }) {
         async function init() {
             console.info("Setting worker");
             const eaWorker = new worker();
-            await eaWorker.init();    
+            await eaWorker.init(initialSettings);
             setEaRunner(eaWorker);
         }
 
@@ -44,7 +47,7 @@ export function EaRunner({ onStep }) {
                 eaRunner.terminate();
             }
         }
-    }, [eaRunner, setEaRunner]);
+    }, [eaRunner]);
 
     useEffect(() => {
         if (!isRunning) {

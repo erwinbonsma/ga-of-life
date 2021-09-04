@@ -1,10 +1,25 @@
-
+let ea_settings;
 let ea;
 let memory;
-export async function init() {
+
+// A bit of a pain to explictly initialize WASM object this way, but there does not seem a much
+// nicer solution, given that the redux state should be immutable.
+function settings_to_wasm(settings) {
+    ea_settings = ea_settings
+        .set_mutation_rate(settings.mutationRate)
+        .set_recombination_rate(settings.recombinationRate)
+        .set_population_size(settings.populationSize)
+        .set_tournament_size(settings.tournamentSize)
+        .set_elitism(settings.elitism)
+
+    return ea_settings;
+}
+
+export async function init(settings) {
     if (!ea) {
         const wasm = await import('ga-of-life');
-        ea = new wasm.MyEvolutionaryAlgorithm();
+        ea_settings = new wasm.MyEaSettings();
+        ea = new wasm.MyEvolutionaryAlgorithm(settings_to_wasm(settings));
 
         const wasm_bg = await import('ga-of-life/ga_of_life_bg.wasm');
         memory = wasm_bg.memory;
@@ -13,8 +28,8 @@ export async function init() {
     return ea;
 };
 
-export function reset() {
-    ea.reset();
+export function reset(settings) {
+    ea.reset(settings_to_wasm(settings));
 }
 
 export function step() {
