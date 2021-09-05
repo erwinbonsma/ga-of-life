@@ -6,6 +6,8 @@ import { initialSettings, SettingsContext } from './EaSettings';
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import worker from 'workerize-loader!../workers/EaWorker';
 
+export const EaContext = React.createContext();
+
 export function EaRunner({ onStep }) {
     const { settings } = useContext(SettingsContext);
     const [autoRun, setAutoRun] = useState(false);

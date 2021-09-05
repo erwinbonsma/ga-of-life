@@ -41,47 +41,47 @@ export const initialSettings = {
 };
 
 export function EaSettings() {
-    const { settings, dispatch } = useContext(SettingsContext);
+    const { eaSettings, eaSettingsDispatch } = useContext(SettingsContext);
 
     return <Form>
         <Form.Group as={Row} controlId="formPopulationSize">
             <Form.Label column sm={6}>Population size</Form.Label>
             <Col sm={6}>
                 <Form.Control type="number" step="10"
-                    value={settings.populationSize}
-                    onChange={e => dispatch({ type: 'populationSize', value: e.target.value })} />
+                    value={eaSettings.populationSize}
+                    onChange={e => eaSettingsDispatch({ type: 'populationSize', value: e.target.value })} />
             </Col>
         </Form.Group>
         <Form.Group as={Row} controlId="formRecombinationRate">
             <Form.Label column sm={6}>Recombination rate</Form.Label>
             <Col sm={6}>
                 <Form.Control type="number" step="0.1"
-                    value={settings.recombinationRate}
-                    onChange={e => dispatch({ type: 'recombinationRate', value: e.target.value })} />
+                    value={eaSettings.recombinationRate}
+                    onChange={e => eaSettingsDispatch({ type: 'recombinationRate', value: e.target.value })} />
             </Col>
         </Form.Group>
         <Form.Group as={Row} controlId="formMutationRate">
             <Form.Label column sm={6}>Mutation rate</Form.Label>
             <Col sm={6}>
                 <Form.Control type="number" step="0.1"
-                    value={settings.mutationRate}
-                    onChange={e => dispatch({ type: 'mutationRate', value: e.target.value })} />
+                    value={eaSettings.mutationRate}
+                    onChange={e => eaSettingsDispatch({ type: 'mutationRate', value: e.target.value })} />
             </Col>
         </Form.Group>
         <Form.Group as={Row} controlId="formTournamentSize">
             <Form.Label column sm={6}>Tournament size</Form.Label>
             <Col sm={6}>
                 <Form.Control type="number" step="1"
-                    value={settings.tournamentSize}
-                    onChange={e => dispatch({ type: 'tournamentSize', value: e.target.value })} />
+                    value={eaSettings.tournamentSize}
+                    onChange={e => eaSettingsDispatch({ type: 'tournamentSize', value: e.target.value })} />
             </Col>
         </Form.Group>
         <Form.Group as={Row} controlId="formElitism">
             <Form.Label column sm={6}>Use elitism</Form.Label>
             <Col sm={6}>
                 <Form.Check type="checkbox" 
-                    checked={settings.elitism}
-                    onChange={e => dispatch({ type: 'elitism', value: e.target.checked })} />
+                    checked={eaSettings.elitism}
+                    onChange={e => eaSettingsDispatch({ type: 'elitism', value: e.target.checked })} />
             </Col>
         </Form.Group>
     </Form>

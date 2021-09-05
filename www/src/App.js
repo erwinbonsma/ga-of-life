@@ -1,68 +1,48 @@
 import './App.css';
-import { useState, useReducer } from 'react';
-import Col from 'react-bootstrap/Col';
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
+import { useState } from 'react';
+import { HashRouter, Link, Route, Switch } from 'react-router-dom';
 
-import { EaGraph } from './components/EaGraph';
-import { EaRunner } from './components/EaRunner';
-import { EaSettings, SettingsContext, initialSettings, settingsReducer } from './components/EaSettings';
-import { EaState } from './components/EaState';
-import { CaRunner } from './components/CaRunner';
-import { GenotypePlot } from './components/GenotypePlot';
-import { PhenotypePlot } from './components/PhenotypePlot';
+import Container from 'react-bootstrap/Container';
+import Nav from 'react-bootstrap/Nav';
+import Navbar from 'react-bootstrap/Navbar';
+
+import { EaContext } from './components/EaRunner';
+import { Ca } from './pages/Ca'
+import { Ea } from './pages/Ea'
 
 function App() {
-  const [eaState, setEaState] = useState();
-  const [eaSettings, eaSettingsDispatch] = useReducer(settingsReducer, initialSettings);
+    const [ea, setEa] = useState();
+    const [eaState, setEaState] = useState();
 
-  return (
-    <div className="App">
-
-      <Container>
-        <Row>
-          <Col lg={4} xs={6}>
-            <SettingsContext.Provider value={{
-              settings: eaSettings,
-              dispatch: eaSettingsDispatch
-            }}>
-              <EaSettings />
-              <Container>
-                <Row>
-                  <Col><EaRunner onStep={setEaState}></EaRunner></Col>
-                </Row>
-                <Row>
-                  <EaState eaState={eaState} />
-                </Row>
-              </Container>
-            </SettingsContext.Provider>
-          </Col>
-          <Col lg={8} xs={12}>
-            <EaGraph eaState={eaState} />
-          </Col>
-        </Row>
-        <Row>
-          <Col lg={3}>
-            <h3>Gene distribution</h3>
-            <GenotypePlot genotype={eaState?.geneDistribution} />
-          </Col>
-          <Col lg={3}>
-            <h3>Best genotype</h3>
-            <GenotypePlot genotype={eaState?.bestGenotype} />
-          </Col>
-          <Col lg={3}>
-            <h3>Cell distribution</h3>
-            <PhenotypePlot phenotype={eaState?.cellDistribution} />
-          </Col>
-          <Col lg={3}>
-            <h3>Best phenotype</h3>
-            <PhenotypePlot phenotype={eaState?.bestPhenotype} />
-          </Col>
-        </Row>
-      </Container>
-      <CaRunner seed={eaState?.bestPhenotype} />
-    </div>
-  );
+    return (
+        <div className="App">
+            <Navbar bg="primary" variant="dark">
+                <Container>
+                    <Navbar.Brand href="#/" >Evolving Live</Navbar.Brand>
+                    <Nav>
+                        <Nav.Link href="#/" >EA</Nav.Link>
+                        <Nav.Link href="#/ca" >CA</Nav.Link>
+                    </Nav>
+                </Container>
+            </Navbar>
+            <EaContext.Provider value={{ ea, setEa, eaState, setEaState }}>
+                <HashRouter basename="/">
+                    <Switch>
+                        <Route exact path="/">
+                            <Ea/>
+                        </Route>
+                        <Route exact path="/ca">
+                            <Ca seed={eaState?.bestPhenotype} />
+                        </Route>
+                        <Route path="*">
+                            <p>Page not found</p>
+                            <Link to="/">Go back</Link>
+                        </Route>
+                    </Switch>
+                </HashRouter>
+            </EaContext.Provider>
+        </div>
+    );
 }
 
 export default App;
