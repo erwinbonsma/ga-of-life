@@ -1,7 +1,10 @@
+import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import React, { useContext } from 'react';
+
+import { ControlContext } from './EaControl';
 
 export const SettingsContext = React.createContext();
 
@@ -42,8 +45,10 @@ export const initialSettings = {
 
 export function EaSettings() {
     const { eaSettings, eaSettingsDispatch } = useContext(SettingsContext);
+    const { eaControlDispatch } = useContext(ControlContext);
 
     return <Form>
+        <h1>EA Settings</h1>
         <Form.Group as={Row} controlId="formPopulationSize">
             <Form.Label column sm={6}>Population size</Form.Label>
             <Col sm={6}>
@@ -84,5 +89,9 @@ export function EaSettings() {
                     onChange={e => eaSettingsDispatch({ type: 'elitism', value: e.target.checked })} />
             </Col>
         </Form.Group>
+        <Button variant="primary" type="submit"
+            onClick={() => eaControlDispatch({ type: 'initialize', settings: eaSettings })} >
+            Start
+        </Button>
     </Form>
 }

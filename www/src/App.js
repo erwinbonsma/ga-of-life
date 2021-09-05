@@ -1,18 +1,17 @@
 import './App.css';
-import { useState } from 'react';
+import { useReducer } from 'react';
 import { HashRouter, Link, Route, Switch } from 'react-router-dom';
 
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 
-import { EaContext } from './components/EaRunner';
+import { ControlContext, eaControlReducer } from './components/EaControl';
 import { Ca } from './pages/Ca'
 import { Ea } from './pages/Ea'
 
 function App() {
-    const [ea, setEa] = useState();
-    const [eaState, setEaState] = useState();
+    const [eaControl, eaControlDispatch] = useReducer(eaControlReducer);
 
     return (
         <div className="App">
@@ -25,14 +24,14 @@ function App() {
                     </Nav>
                 </Container>
             </Navbar>
-            <EaContext.Provider value={{ ea, setEa, eaState, setEaState }}>
+            <ControlContext.Provider value={{ eaControl, eaControlDispatch }}>
                 <HashRouter basename="/">
                     <Switch>
                         <Route exact path="/">
                             <Ea/>
                         </Route>
                         <Route exact path="/ca">
-                            <Ca seed={eaState?.bestPhenotype} />
+                            <Ca seed={eaControl?.eaState?.bestPhenotype} />
                         </Route>
                         <Route path="*">
                             <p>Page not found</p>
@@ -40,7 +39,7 @@ function App() {
                         </Route>
                     </Switch>
                 </HashRouter>
-            </EaContext.Provider>
+            </ControlContext.Provider>
         </div>
     );
 }

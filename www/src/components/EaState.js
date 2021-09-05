@@ -1,8 +1,15 @@
+import { useContext } from 'react';
+
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 
-export function EaState({ eaState }) {
+import { ControlContext } from '../components/EaControl';
+
+export function EaState() {
+    const { eaControl } = useContext(ControlContext);
+    const eaState = eaControl?.eaState;
+
     return (eaState && (
         <Container>
             <Row>
@@ -23,11 +30,11 @@ export function EaState({ eaState }) {
             </Row>
             <Row>
                 <Col className="Label" xs={8}>Run time [s]</Col>
-                <Col className="NumValue" xs={4}>{eaState.runTime}</Col>
+                <Col className="NumValue" xs={4}>{eaControl.runTime}</Col>
             </Row>
             <Row>
                 <Col className="Label" xs={8}>CA steps [s<sup>-1</sup>]</Col>
-                <Col className="NumValue" xs={4}>{eaState.runTime > 0 ? Math.round(eaState.caSteps / eaState.runTime) : "-"}</Col>
+                <Col className="NumValue" xs={4}>{eaControl.runTime > 0 ? Math.round(eaState.caSteps / eaControl.runTime) : "-"}</Col>
             </Row>
         </Container>
     )) || null;
