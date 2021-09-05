@@ -11,13 +11,13 @@ export function eaControlReducer(state, action) {
 
     switch (action.type) {
         case 'initialize': return {
-            initSettings: action.settings
+            settings: action.settings
         };
         case 'initialized': return {
             worker: action.worker,
             isRunning: false,
             executeStep: false,
-            autoRun: false,
+            autoRun: true,
             runTime: 0,
         };
         case 'toggleAutoRun': return {
@@ -39,7 +39,11 @@ export function eaControlReducer(state, action) {
             runTime: state.runTime + action.executionTime,
             eaState: action.eaState
         };
-        case 'reset': return {}
+        case 'reset': return {
+            ...state,
+            destroy: true,
+        };
+        case 'executedReset': return undefined;
         default:
             console.error('Unexpected action:', action.type);
     }
@@ -48,7 +52,7 @@ export function eaControlReducer(state, action) {
 export function EaControl() {
     const { eaControl, eaControlDispatch } = useContext(ControlContext);
 
-    console.info("eaControl =", eaControl);
+    // console.info("eaControl =", eaControl);
 
     // Init EA in worker thread
     useEffect(() => {
@@ -59,10 +63,10 @@ export function EaControl() {
             eaControlDispatch({ type: 'initialized', worker: eaWorker });
         }
 
-        if (eaControl.initSettings) {
-            init(eaControl.initSettings);
+        if (eaControl.settings) {
+            init(eaControl.settings);
         }
-    }, [eaControl, eaControlDispatch]);
+    }, [eaControl.settings, eaControlDispatch]);
 
     useEffect(() => {
         if (eaControl.worker && !eaControl.isRunning) {
@@ -72,7 +76,7 @@ export function EaControl() {
 
                 eaControl.worker.step().then(eaState => {
                     const endStep = new Date().getTime();
-                    eaControlDispatch({ 
+                    eaControlDispatch({
                         type: 'executedStep',
                         executionTime: (endStep - startStep),
                         eaState 
@@ -81,6 +85,14 @@ export function EaControl() {
             }
         }
     }, [eaControl, eaControlDispatch]);
+
+    useEffect(() => {
+        if (eaControl.destroy) {
+            console.info("Terminating worker");
+            eaControl.worker.terminate();
+            eaControlDispatch({ type: 'executedReset' });
+        }
+    }, [eaControl.destroy, eaControlDispatch]);
 
     const isRunning = eaControl.isRunning || eaControl.autoRun;
     return (
