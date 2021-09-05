@@ -16,13 +16,16 @@ Cellular Automata
 Web front-end
 -------------
 
+- Refactor CA to also use redux
+    - Remove Seed button: Auto-seed CA when component is shown.
 - Add Generation Step GA run configuration (to only update UI every X generations)
-- Make key GA parameters configurable
-    - Pop.size, tournament size, elitism [yes/no], mutation rate, recombination rate
 - Add plot for CA with:
     - num alive cells
     - num once-alive cells
 - Look & Feel
     - Improve theming
+    - Improve button layouts: uniform size, add spacing
+- Add EA analysis
+    - History of best individual
 
 - Reduce WASM size
