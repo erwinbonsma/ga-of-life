@@ -92,7 +92,7 @@ export function EaControl() {
             eaControl.worker.terminate();
             eaControlDispatch({ type: 'executedReset' });
         }
-    }, [eaControl.destroy, eaControlDispatch]);
+    }, [eaControl.destroy, eaControl.worker, eaControlDispatch]);
 
     const isRunning = eaControl.isRunning || eaControl.autoRun;
     return (
