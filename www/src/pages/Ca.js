@@ -1,5 +1,5 @@
-import { CaRunner } from '../components/CaRunner';
+import { CaControl } from '../components/CaControl';
 
 export function Ca({ seed }) {
-    return <CaRunner seed={seed} />
+    return <CaControl seed={seed} />
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useReducer } from 'react';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
@@ -100,10 +100,31 @@ function seedCa(ca, seed) {
     }
 }
 
-export function CaRunner({ seed }) {
-    const [ca, setCa] = useState();
-    const [autoPlay, setAutoPlay] = useState();
-    const [scheduleStep, setScheduleStep] = useState(0);
+export function caControlReducer(state, action) {
+    console.info('caReducer', { state, action });
+
+    switch (action.type) {
+        case 'initialized': return {
+            ca: action.ca,
+            seed: action.seed,
+            numSteps: 0,
+            autoRun: false,
+        };
+        case 'toggleAutoRun': return {
+            ...state,
+            autoRun: !state.autoRun,
+        }
+        case 'executedStep': return {
+            ...state,
+            numSteps: state.numSteps + 1
+        };
+        default:
+            console.error('Unexpected action:', action.type);
+    }
+}
+
+export function CaControl({ seed }) {
+    const [caControl, caControlDispatch] = useReducer(caControlReducer);
     const toggledRef = useRef(new Array(GRID_SIZE * GRID_SIZE));
     const canvasRef = useRef(null);
 
@@ -111,39 +132,40 @@ export function CaRunner({ seed }) {
         toggledRef.current.forEach((_, i, a) => { a[i] = 0; });
     }
 
-    const onSeedClick = () => {
+    const reset = (ca) => {
         clearToggled();
         seedCa(ca, seed);
 
         drawCells(drawContext(canvasRef), ca, toggledRef.current);
     }
 
-    const onStepClick = () => {
+    const step = (ca) => {
         executeStep(ca, toggledRef.current, drawContext(canvasRef));
-    }
-    const onTogglePlayClick = () => {
-        setAutoPlay(!autoPlay);
     }
 
     useEffect(() => {
         async function init() {
             console.info("Loading CA wasm");
-            setCa(await wasmInit());
+
+            const ca = await wasmInit();
+            seedCa(ca, seed);
+            caControlDispatch({ type: 'initialized', ca, seed });
         }
 
-        if (!ca) {
+        if (!caControl?.ca || caControl.seed !== seed) {
             init();
         } else {
             drawGrid(drawContext(canvasRef));
+            drawCells(drawContext(canvasRef), caControl.ca, toggledRef.current);
         }
-    }, [ca]);
+    }, [seed, caControl?.ca, caControl?.seed]);
 
     useEffect(() => {
-        if (autoPlay) {
+        if (caControl?.autoRun) {
             const timer = setTimeout(() => {
-                executeStep(ca, toggledRef.current, drawContext(canvasRef));
+                executeStep(caControl.ca, toggledRef.current, drawContext(canvasRef));
                 // Trigger next update
-                setScheduleStep(scheduleStep + 1);
+                caControlDispatch({ type: 'executedStep' });
             }, 10);
 
             return function cleanup() {
@@ -155,10 +177,9 @@ export function CaRunner({ seed }) {
     return (<Container>
         <Row>
             <Col>
-                <Button onClick={onSeedClick} disabled={!ca || autoPlay}>Seed</Button>
-                <Button onClick={onTogglePlayClick} disabled={!ca || autoPlay}>Play</Button>
-                <Button onClick={onTogglePlayClick} disabled={!(ca && autoPlay)}>Pause</Button>
-                <Button onClick={onStepClick} disabled={!ca || autoPlay}>Step</Button>
+                <Button onClick={() => reset(caControl.ca)} disabled={!caControl || caControl.autoRun}>Reset</Button>
+                <Button onClick={() => caControlDispatch({ type: 'toggleAutoRun' })} disabled={!caControl}>{caControl?.autoRun ? 'Pause' : 'Play'}</Button>
+                <Button onClick={() => step(caControl.ca)} disabled={!caControl || caControl.autoRun}>Step</Button>
             </Col>
         </Row>
         <Row>
