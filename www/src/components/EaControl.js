@@ -7,8 +7,6 @@ import worker from 'workerize-loader!../workers/EaWorker';
 export const ControlContext = React.createContext();
 
 export function eaControlReducer(state, action) {
-    console.info('eaReducer', { state, action });
-
     switch (action.type) {
         case 'initialize': return {
             settings: action.settings
@@ -96,7 +94,7 @@ export function EaControl() {
 
     const isRunning = eaControl.isRunning || eaControl.autoRun;
     return (
-        <div class="ButtonRow">
+        <div className="ButtonRow">
             <Button onClick={() => eaControlDispatch({ type: 'toggleAutoRun' })} disabled={eaControl?.autoRun}>Run</Button>{' '}
             <Button onClick={() => eaControlDispatch({ type: 'toggleAutoRun' })} disabled={!eaControl?.autoRun}>Pause</Button>{' '}
             <Button onClick={() => eaControlDispatch({ type: 'executeStep' })} disabled={isRunning}>Step</Button>{' '}

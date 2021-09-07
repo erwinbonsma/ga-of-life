@@ -101,8 +101,6 @@ function seedCa(ca, seed) {
 }
 
 export function caControlReducer(state, action) {
-    console.info('caReducer', { state, action });
-
     switch (action.type) {
         case 'initialized': return {
             ca: action.ca,
