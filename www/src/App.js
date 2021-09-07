@@ -18,7 +18,7 @@ function App() {
             <Navbar bg="primary" variant="dark">
                 <Container>
                     <Navbar.Brand href="#/" >Evolving Live</Navbar.Brand>
-                    <Nav>
+                    <Nav defaultActiveKey="#/">
                         <Nav.Link href="#/" >EA</Nav.Link>
                         <Nav.Link href="#/ca" >CA</Nav.Link>
                     </Nav>
