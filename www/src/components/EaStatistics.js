@@ -4,9 +4,9 @@ import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 
-import { ControlContext } from '../components/EaControl';
+import { ControlContext } from './EaControl';
 
-export function EaState() {
+export function EaStatistics() {
     const { eaControl } = useContext(ControlContext);
     const eaState = eaControl?.eaState;
 

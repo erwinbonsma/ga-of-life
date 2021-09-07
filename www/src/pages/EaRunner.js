@@ -7,7 +7,7 @@ import Row from 'react-bootstrap/Row';
 import { GenotypePlot } from '../components/GenotypePlot';
 import { PhenotypePlot } from '../components/PhenotypePlot';
 import { EaGraph } from '../components/EaGraph';
-import { EaState } from '../components/EaState';
+import { EaStatistics } from '../components/EaStatistics';
 import { EaControl, ControlContext } from '../components/EaControl';
 
 export function EaRunner() {
@@ -21,7 +21,7 @@ export function EaRunner() {
                         <Col><EaControl /></Col>
                     </Row>
                     <Row>
-                        <EaState />
+                        <EaStatistics />
                     </Row>
                 </Container>
             </Col>
