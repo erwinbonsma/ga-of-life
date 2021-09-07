@@ -175,11 +175,12 @@ export function CaControl({ seed }) {
     });
 
     return (<Container>
-        <Row>
+        <Row className="ButtonRow">
             <Col>
+                <Button onClick={() => caControlDispatch({ type: 'toggleAutoRun' })} disabled={!caControl || caControl.autoRun}>Play</Button>{' '}
+                <Button onClick={() => caControlDispatch({ type: 'toggleAutoRun' })} disabled={!caControl || !caControl.autoRun}>Pause</Button>{' '}
+                <Button onClick={() => step(caControl.ca)} disabled={!caControl || caControl.autoRun}>Step</Button>{' '}
                 <Button onClick={() => reset(caControl.ca)} disabled={!caControl || caControl.autoRun}>Reset</Button>
-                <Button onClick={() => caControlDispatch({ type: 'toggleAutoRun' })} disabled={!caControl}>{caControl?.autoRun ? 'Pause' : 'Play'}</Button>
-                <Button onClick={() => step(caControl.ca)} disabled={!caControl || caControl.autoRun}>Step</Button>
             </Col>
         </Row>
         <Row>

@@ -96,10 +96,11 @@ export function EaControl() {
 
     const isRunning = eaControl.isRunning || eaControl.autoRun;
     return (
-        <div>
+        <div class="ButtonRow">
+            <Button onClick={() => eaControlDispatch({ type: 'toggleAutoRun' })} disabled={eaControl?.autoRun}>Run</Button>{' '}
+            <Button onClick={() => eaControlDispatch({ type: 'toggleAutoRun' })} disabled={!eaControl?.autoRun}>Pause</Button>{' '}
+            <Button onClick={() => eaControlDispatch({ type: 'executeStep' })} disabled={isRunning}>Step</Button>{' '}
             <Button onClick={() => eaControlDispatch({ type: 'reset' })} disabled={isRunning}>Reset</Button>
-            <Button onClick={() => eaControlDispatch({ type: 'toggleAutoRun' })} >{eaControl.autoRun ? 'Pause' : 'Run'}</Button>
-            <Button onClick={() => eaControlDispatch({ type: 'executeStep' })} disabled={isRunning}>Step</Button>
         </div>
     );
 }

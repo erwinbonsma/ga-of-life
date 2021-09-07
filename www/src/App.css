@@ -43,3 +43,7 @@ h3 {
 .NumFormField {
 	text-align: right;
 }
+
+.ButtonRow {
+  padding: 5px 5px;
+}
