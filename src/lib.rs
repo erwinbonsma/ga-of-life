@@ -35,9 +35,7 @@ use ga::selection::{
     TournamentSelection,
 };
 
-const GARDEN_SIZE: usize = 64;
 const SEED_PATCH_SIZE: usize = 8;
-const TOTAL_GARDEN_CELLS: usize = GARDEN_SIZE * GARDEN_SIZE;
 const TOTAL_SEED_CELLS: usize = SEED_PATCH_SIZE * SEED_PATCH_SIZE;
 
 #[derive(Debug)]
@@ -72,11 +70,16 @@ struct MyConfig {
 #[derive(Debug)]
 // This struct contains the settings that can be modified by the user
 pub struct MyEaSettings {
+    // Problem settings
+    garden_size: usize,
+    wrap_border: bool,
+
+    // Optimization settings
     mutation_rate: f32,
     recombination_rate: f32,
     population_size: usize,
     tournament_size: usize,
-    elitism: bool
+    elitism: bool,
 }
 
 #[wasm_bindgen]
@@ -218,9 +221,9 @@ impl Expressor<BinaryChromosome, MyPhenotype> for MyNeutralExpressor {
 }
 
 impl MyEvaluator {
-    pub fn new() -> Self {
+    pub fn new(garden_size: usize, wrap_border: bool) -> Self {
         MyEvaluator {
-            gol: GameOfLife::new(GARDEN_SIZE, GARDEN_SIZE),
+            gol: GameOfLife::new(garden_size, garden_size, wrap_border),
             gol_runner: GameOfLifeRunner::new(100, 2.0),
             num_ca_steps: 0,
         }
@@ -243,11 +246,14 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
     fn evaluate(&mut self, phenotype: &MyPhenotype) -> f32 {
         self.gol.reset();
 
-        let xy0 = (GARDEN_SIZE - SEED_PATCH_SIZE) / 2;
+        let total_garden_cells = self.gol.num_cells();
+
+        let x0 = (self.gol.width() - SEED_PATCH_SIZE) / 2;
+        let y0 = (self.gol.height() - SEED_PATCH_SIZE) / 2;
         for x in 0..SEED_PATCH_SIZE {
             for y in 0..SEED_PATCH_SIZE {
                 if phenotype.bit_grid.get(x, y) {
-                    self.gol.set(xy0 + x, xy0 + y);
+                    self.gol.set(x0 + x, y0 + y);
                 }
             }
         }
@@ -258,7 +264,7 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
 
         (
             // Reward total garden cells toggled
-            2 * (stats.num_toggled as i32 - TOTAL_GARDEN_CELLS as i32) +
+            2 * (stats.num_toggled as i32 - total_garden_cells as i32) +
             // Reward fewer seed cells
             TOTAL_SEED_CELLS as i32 - stats.ini_cells as i32
         ) as f32 
@@ -309,7 +315,7 @@ pub fn setup_ga(settings: &MyEaSettings) -> EvolutionaryAlgorithm<BinaryChromoso
         settings.population_size,
         Box::new(MyConfig::new(expressor.genotype_length())),
         Box::new(expressor),
-        Box::new(MyEvaluator::new()),
+        Box::new(MyEvaluator::new(settings.garden_size, settings.wrap_border)),
         if settings.elitism {
             Box::new(ElitismSelection::new(1, main_selector))
         } else {
@@ -333,12 +339,30 @@ impl MyEaSettings {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         MyEaSettings {
+            garden_size: 64,
+            wrap_border: false,
             mutation_rate: 0.9,
             recombination_rate: 0.4,
             population_size: 100,
             tournament_size: 2,
-            elitism: true
+            elitism: true,
         }
+    }
+
+    pub fn set_garden_size(mut self, garden_size: usize) -> Self {
+        self.garden_size = garden_size;
+        self
+    }
+    pub fn garden_size(&self) -> usize {
+        self.garden_size
+    }
+
+    pub fn set_border(mut self, wrap_border: bool) -> Self {
+        self.wrap_border = wrap_border;
+        self
+    }
+    pub fn border_wraps(&self) -> bool {
+        self.wrap_border
     }
 
     pub fn set_mutation_rate(mut self, mutation_rate: f32) -> Self {

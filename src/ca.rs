@@ -271,8 +271,14 @@ impl GameOfLife {
     //    avoids the need to look the next unit column when updating cells _during_ the update
     //    loop.
     #[wasm_bindgen(constructor)]
-    pub fn new(width: usize, height: usize) -> Self {
-        GameOfLife::new_result(width, height, GridBorder::Wrapped).unwrap()
+    pub fn new(width: usize, height: usize, wrap_border: bool) -> Self {
+        GameOfLife::new_result(
+            width, height, if wrap_border {
+                GridBorder::Wrapped
+            } else {
+                GridBorder::Zeroes
+            }
+        ).unwrap()
     }
 
     pub fn width(&self) -> usize {
@@ -281,6 +287,10 @@ impl GameOfLife {
 
     pub fn height(&self) -> usize {
         self.height
+    }
+
+    pub fn num_cells(&self) -> usize {
+        self.width * self.height
     }
 
     pub fn num_steps(&self) -> u32 {
