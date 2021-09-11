@@ -8,7 +8,8 @@ require('highcharts/modules/exporting')(Highcharts);
 const historyLen = 250;
 
 export function EaGraph() {
-    const [history, setHistory] = useState([]);
+    const [lastPlotGeneration, setLastPlotGeneration] = useState(0);
+    const [numPlotPoints, setNumPlotPoints] = useState(0);
     const [chart, setChart] = useState();
 
     const { eaControl } = useContext(EaControlContext);
@@ -55,31 +56,27 @@ export function EaGraph() {
         }
         if (!eaState) {
             // EA was reset. Reset graph, if not yet already done.
-            if (history.length > 0) {
-                setHistory([]);
-
+            if (lastPlotGeneration > 0) {
                 chart.destroy();
                 initChart();
+
+                setLastPlotGeneration(0);
+                setNumPlotPoints(0);
             }
         } else {
             // Add EA state to graph, if not yet already done.
-            if (eaState?.generations !== history[history.length - 1]?.generations) {
-                var shift = false;
-                if (history.length < historyLen) {
-                    setHistory([
-                        ...history, eaState
-                    ]);
-                } else {
-                    setHistory([
-                        ...history.slice(1, historyLen), eaState
-                    ]);
-                    shift = true;
-                }
+            if (eaState?.generations !== lastPlotGeneration) {
+                const shift = numPlotPoints === historyLen;
                 chart.series[0].addPoint([eaState.generations, eaState.maxFitness], true, shift);
                 chart.series[1].addPoint([eaState.generations, eaState.evaluationsDelta], true, shift);
+
+                setLastPlotGeneration(eaState.generations);
+                if (!shift) {
+                    setNumPlotPoints(numPlotPoints + 1);
+                }
             }
         }
-    }, [eaState, history, chart])
+    }, [eaState, chart, numPlotPoints, lastPlotGeneration]);
 
     useEffect(() => {
         initChart();
