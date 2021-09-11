@@ -19,12 +19,14 @@ export function CaGraph() {
                     text: "CA Stats",
                 },
                 yAxis: [{
+                    floor: 0,
                     title: {
-                        text: '# Cells'
+                        text: 'Num. alive cells'
                     }
                 }, {
+                    floor: 0,
                     title: {
-                        text: '# Cells'
+                        text: 'Num. once alive cells'
                     },
                     opposite: true,
                 }],
