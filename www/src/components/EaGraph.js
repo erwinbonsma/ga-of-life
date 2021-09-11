@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 
-import { ControlContext } from '../components/EaControl';
+import { EaControlContext } from '../components/EaControl';
 
 const Highcharts = require('highcharts');
 require('highcharts/modules/exporting')(Highcharts);
@@ -11,7 +11,7 @@ export function EaGraph() {
     const [history, setHistory] = useState([]);
     const [chart, setChart] = useState();
 
-    const { eaControl } = useContext(ControlContext);
+    const { eaControl } = useContext(EaControlContext);
     const eaState = eaControl?.eaState;
 
     const initChart = function() {

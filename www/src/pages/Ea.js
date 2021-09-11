@@ -1,16 +1,16 @@
 import { useContext, useReducer } from 'react';
-import { SettingsContext, initialSettings, settingsReducer } from '../components/EaSettings';
-import { ControlContext } from '../components/EaControl';
+import { EaSettingsContext, initialEaSettings, eaSettingsReducer } from '../components/EaSettings';
+import { EaControlContext } from '../components/EaControl';
 import { EaRunner } from './EaRunner';
 import { EaSetup } from './EaSetup';
 
 export function Ea() {
-    const { eaControl } = useContext(ControlContext);
-    const [eaSettings, eaSettingsDispatch] = useReducer(settingsReducer, initialSettings);
+    const { eaControl } = useContext(EaControlContext);
+    const [eaSettings, eaSettingsDispatch] = useReducer(eaSettingsReducer, initialEaSettings);
 
     return (
-        <SettingsContext.Provider value={{ eaSettings, eaSettingsDispatch }}>
+        <EaSettingsContext.Provider value={{ eaSettings, eaSettingsDispatch }}>
             {eaControl ? <EaRunner /> : <EaSetup />}
-        </SettingsContext.Provider>
+        </EaSettingsContext.Provider>
     );
 }

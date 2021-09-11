@@ -4,15 +4,24 @@ import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import React, { useContext } from 'react';
 
-import { ControlContext } from './EaControl';
+import { EaControlContext } from './EaControl';
+import { CaSettingsContext } from './CaControl';
 
-export const SettingsContext = React.createContext();
+export const EaSettingsContext = React.createContext();
+
+export const initialEaSettings = {
+    populationSize: 100,
+    recombinationRate: 0.4,
+    mutationRate: 0.9,
+    tournamentSize: 2,
+    elitism: true,
+};
 
 function bound(value, min, max) {
     return Math.max(Math.min(max, value), min);
 }
 
-export function settingsReducer(state, action) {
+export function eaSettingsReducer(state, action) {
     console.log("dispatched", state, action);
     switch (action.type) {
         case 'populationSize': return {
@@ -29,25 +38,27 @@ export function settingsReducer(state, action) {
         };
         case 'elitism': return {
             ...state, elitism: action.value
-        }
+        };
         default:
             console.error('Unexpected action:', action.type);
     }
 }
 
-export const initialSettings = {
-    populationSize: 100,
-    recombinationRate: 0.4,
-    mutationRate: 0.9,
-    tournamentSize: 2,
-    elitism: true,
-};
-
 export function EaSettings() {
-    const { eaSettings, eaSettingsDispatch } = useContext(SettingsContext);
-    const { eaControlDispatch } = useContext(ControlContext);
+    const { caSettings, caSettingsDispatch } = useContext(CaSettingsContext);
+    const { eaSettings, eaSettingsDispatch } = useContext(EaSettingsContext);
+    const { eaControlDispatch } = useContext(EaControlContext);
 
     return <Form>
+        <h1>Problem Settings</h1>
+        <Form.Group as={Row} controlId="formBorderWraps">
+            <Form.Label column sm={6}>Border wraps</Form.Label>
+            <Col sm={6}>
+                <Form.Check type="checkbox" 
+                    checked={caSettings.borderWraps}
+                    onChange={e => caSettingsDispatch({ type: 'borderWraps', value: e.target.checked })} />
+            </Col>
+        </Form.Group>
         <h1>EA Settings</h1>
         <Form.Group as={Row} controlId="formPopulationSize">
             <Form.Label column sm={6}>Population size</Form.Label>

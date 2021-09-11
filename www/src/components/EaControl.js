@@ -4,7 +4,9 @@ import Button from 'react-bootstrap/Button';
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import worker from 'workerize-loader!../workers/EaWorker';
 
-export const ControlContext = React.createContext();
+export const EaControlContext = React.createContext();
+
+export const initialEaControlState = undefined;
 
 export function eaControlReducer(state, action) {
     switch (action.type) {
@@ -48,9 +50,7 @@ export function eaControlReducer(state, action) {
 }
 
 export function EaControl() {
-    const { eaControl, eaControlDispatch } = useContext(ControlContext);
-
-    // console.info("eaControl =", eaControl);
+    const { eaControl, eaControlDispatch } = useContext(EaControlContext);
 
     // Init EA in worker thread
     useEffect(() => {

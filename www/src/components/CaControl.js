@@ -1,8 +1,9 @@
-import { useEffect, useRef, useReducer } from 'react';
+import React, { useContext, useEffect, useRef, useReducer } from 'react';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
+
 import { GRID_SIZE, SEED_SIZE } from '../shared/Constants';
 
 const CELL_SIZE = 4;
@@ -11,15 +12,33 @@ const EMPTY_COLOR = "#FFFFFF";
 const ALIVE_COLOR = "#000000";
 const LIVED_COLOR = "#A0A0A0";
 
-let wasmCa;
-export async function wasmInit() {
-    if (!wasmCa) {
-        const wasm = await import('ga-of-life');
+export const CaSettingsContext = React.createContext();
 
-        wasmCa = new wasm.GameOfLife(GRID_SIZE, GRID_SIZE);
+export const initialCaSettings = {
+    borderWraps: false,
+    gridSize: GRID_SIZE,
+}
+
+export function caSettingsReducer(state, action) {
+    switch (action.type) {
+        case 'borderWraps': return {
+            ...state, borderWraps: action.value
+        };
+        case 'gridSize': return {
+            ...state, gridSize: action.value
+        };
+        default:
+            console.error('Unexpected action:', action.type);
+    }
+}
+
+let wasm;
+async function wasmInit() {
+    if (!wasm) {
+        wasm = await import('ga-of-life');
     }
 
-    return wasmCa;
+    return wasm;
 };
 
 function drawGrid(ctx) {
@@ -100,7 +119,7 @@ function seedCa(ca, seed) {
     }
 }
 
-export function caControlReducer(state, action) {
+function caControlReducer(state, action) {
     switch (action.type) {
         case 'initialized': return {
             ca: action.ca,
@@ -123,6 +142,7 @@ export function caControlReducer(state, action) {
 
 export function CaControl({ seed }) {
     const [caControl, caControlDispatch] = useReducer(caControlReducer);
+    const { caSettings } = useContext(CaSettingsContext);
     const toggledRef = useRef(new Array(GRID_SIZE * GRID_SIZE));
     const canvasRef = useRef(null);
 
@@ -145,7 +165,8 @@ export function CaControl({ seed }) {
         async function init() {
             console.info("Loading CA wasm");
 
-            const ca = await wasmInit();
+            const wasm = await wasmInit();
+            const ca = new wasm.GameOfLife(caSettings.gridSize, caSettings.gridSize, caSettings.borderWraps);
             seedCa(ca, seed);
             caControlDispatch({ type: 'initialized', ca, seed });
         }
@@ -156,7 +177,7 @@ export function CaControl({ seed }) {
             drawGrid(drawContext(canvasRef));
             drawCells(drawContext(canvasRef), caControl.ca, toggledRef.current);
         }
-    }, [seed, caControl?.ca, caControl?.seed]);
+    }, [seed, caControl?.ca, caControl?.seed, caSettings]);
 
     useEffect(() => {
         if (caControl?.autoRun) {

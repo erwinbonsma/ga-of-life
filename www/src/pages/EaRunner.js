@@ -8,10 +8,10 @@ import { GenotypePlot } from '../components/GenotypePlot';
 import { PhenotypePlot } from '../components/PhenotypePlot';
 import { EaGraph } from '../components/EaGraph';
 import { EaStatistics } from '../components/EaStatistics';
-import { EaControl, ControlContext } from '../components/EaControl';
+import { EaControl, EaControlContext } from '../components/EaControl';
 
 export function EaRunner() {
-    const { eaControl } = useContext(ControlContext);
+    const { eaControl } = useContext(EaControlContext);
 
     return (<Container>
         <Row>

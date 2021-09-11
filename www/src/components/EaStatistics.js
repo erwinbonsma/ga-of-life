@@ -4,10 +4,10 @@ import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 
-import { ControlContext } from './EaControl';
+import { EaControlContext } from './EaControl';
 
 export function EaStatistics() {
-    const { eaControl } = useContext(ControlContext);
+    const { eaControl } = useContext(EaControlContext);
     const eaState = eaControl?.eaState;
 
     if (!eaState) {

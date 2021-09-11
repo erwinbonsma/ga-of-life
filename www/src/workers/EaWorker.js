@@ -6,6 +6,7 @@ let memory;
 // nicer solution, given that the redux state should be immutable.
 function settings_to_wasm(settings) {
     ea_settings = ea_settings
+        .set_border(settings.borderWraps)
         .set_mutation_rate(settings.mutationRate)
         .set_recombination_rate(settings.recombinationRate)
         .set_population_size(settings.populationSize)
