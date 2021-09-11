@@ -7,6 +7,7 @@ Problem specific:
         - Minimum number of steps
         - Minimum start cells
         - Minimum cells at end
+    - Max cells (at any time)
 - Different CA configuration
     - Size?    
 
@@ -18,10 +19,8 @@ Cellular Automata
 Web front-end
 -------------
 
+- Remember EA settings on reset
 - Add Generation Step GA run configuration (to only update UI every X generations)
-- Add plot for CA with:
-    - num alive cells
-    - num once-alive cells
 - Look & Feel
     - Improve theming
 - Add EA analysis
