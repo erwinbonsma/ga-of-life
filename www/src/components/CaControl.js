@@ -60,7 +60,7 @@ function drawGrid(ctx) {
     ctx.stroke();
 }
 
-function drawCells(ctx, ca, toggled) {
+function drawCells(ctx, ca, onceAlive) {
     ctx.beginPath();
   
     for (let row = 0; row < GRID_SIZE; row++) {
@@ -68,7 +68,7 @@ function drawCells(ctx, ca, toggled) {
         
             if (ca.get(col, row)) {
                 ctx.fillStyle = ALIVE_COLOR;
-            } else if (toggled[col + row * GRID_SIZE]) {
+            } else if (onceAlive[col + row * GRID_SIZE]) {
                 ctx.fillStyle = LIVED_COLOR;
             } else {
                 ctx.fillStyle = EMPTY_COLOR;
@@ -90,20 +90,26 @@ function drawContext(canvasRef) {
     return canvasRef?.current?.getContext('2d');
 }
 
-function updateToggled(ca, toggled) {
+function updateCaStats(ca, onceAlive) {
+    let numAlive = 0;
     for (let row = 0; row < GRID_SIZE; row++) {
         for (let col = 0; col < GRID_SIZE; col++) {
             if (ca.get(col, row)) {
-                toggled[col + row * GRID_SIZE] = true;
+                onceAlive[col + row * GRID_SIZE] = true;
+                numAlive += 1;
             }
         }
     }
+
+    return { numAlive, numOnceAlive: onceAlive.filter(x => x).length };
 }
 
-function executeStep(ca, toggled, ctx) {
+function executeStep(ca, onceAlive, ctx) {
     ca.step();
-    updateToggled(ca, toggled);
-    drawCells(ctx, ca, toggled);
+    const stats = updateCaStats(ca, onceAlive);
+    drawCells(ctx, ca, onceAlive);
+
+    return stats;
 }
 
 function seedCa(ca, seed) {
@@ -133,7 +139,8 @@ function caControlReducer(state, action) {
         }
         case 'executedStep': return {
             ...state,
-            numSteps: state.numSteps + 1
+            numSteps: state.numSteps + 1,
+            stats: action.stats
         };
         default:
             console.error('Unexpected action:', action.type);
@@ -143,22 +150,23 @@ function caControlReducer(state, action) {
 export function CaControl({ seed }) {
     const [caControl, caControlDispatch] = useReducer(caControlReducer);
     const { caSettings } = useContext(CaSettingsContext);
-    const toggledRef = useRef(new Array(GRID_SIZE * GRID_SIZE));
+    const onceAliveRef = useRef(new Array(GRID_SIZE * GRID_SIZE));
     const canvasRef = useRef(null);
 
-    const clearToggled = () => {
-        toggledRef.current.forEach((_, i, a) => { a[i] = 0; });
+    const clearonceAlive = () => {
+        onceAliveRef.current.forEach((_, i, a) => { a[i] = 0; });
     }
 
     const reset = (ca) => {
-        clearToggled();
+        clearonceAlive();
         seedCa(ca, seed);
 
-        drawCells(drawContext(canvasRef), ca, toggledRef.current);
+        drawCells(drawContext(canvasRef), ca, onceAliveRef.current);
     }
 
     const step = (ca) => {
-        executeStep(ca, toggledRef.current, drawContext(canvasRef));
+        const stats = executeStep(ca, onceAliveRef.current, drawContext(canvasRef));
+        caControlDispatch({ type: 'executedStep', stats });
     }
 
     useEffect(() => {
@@ -175,16 +183,14 @@ export function CaControl({ seed }) {
             init();
         } else {
             drawGrid(drawContext(canvasRef));
-            drawCells(drawContext(canvasRef), caControl.ca, toggledRef.current);
+            drawCells(drawContext(canvasRef), caControl.ca, onceAliveRef.current);
         }
     }, [seed, caControl?.ca, caControl?.seed, caSettings]);
 
     useEffect(() => {
         if (caControl?.autoRun) {
             const timer = setTimeout(() => {
-                executeStep(caControl.ca, toggledRef.current, drawContext(canvasRef));
-                // Trigger next update
-                caControlDispatch({ type: 'executedStep' });
+                step(caControl.ca);
             }, 10);
 
             return function cleanup() {
@@ -207,6 +213,12 @@ export function CaControl({ seed }) {
                 <canvas ref={canvasRef}
                     width={(CELL_SIZE + 1) * GRID_SIZE}
                     height={(CELL_SIZE + 1) * GRID_SIZE}></canvas>
+            </Col>
+        </Row>
+        <Row>
+            <Col>{caControl?.stats && 
+                <p>{caControl.stats.numAlive}/{caControl.stats.numOnceAlive}</p>
+            }
             </Col>
         </Row>
     </Container>);
