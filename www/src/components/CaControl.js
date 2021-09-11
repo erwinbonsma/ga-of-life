@@ -13,11 +13,13 @@ const ALIVE_COLOR = "#000000";
 const LIVED_COLOR = "#A0A0A0";
 
 export const CaSettingsContext = React.createContext();
+export const CaControlContext = React.createContext();
 
 export const initialCaSettings = {
     borderWraps: false,
     gridSize: GRID_SIZE,
-}
+};
+export const initialCaControlState = undefined;
 
 export function caSettingsReducer(state, action) {
     switch (action.type) {
@@ -35,6 +37,8 @@ export function caSettingsReducer(state, action) {
 let wasm;
 async function wasmInit() {
     if (!wasm) {
+        console.info("Loading CA wasm");
+
         wasm = await import('ga-of-life');
     }
 
@@ -125,8 +129,9 @@ function seedCa(ca, seed) {
     }
 }
 
-function caControlReducer(state, action) {
+export function caControlReducer(state, action) {
     switch (action.type) {
+        case 'initialize': return initialCaControlState;
         case 'initialized': return {
             ca: action.ca,
             seed: action.seed,
@@ -140,7 +145,7 @@ function caControlReducer(state, action) {
         case 'executedStep': return {
             ...state,
             numSteps: state.numSteps + 1,
-            stats: action.stats
+            caStats: action.stats
         };
         default:
             console.error('Unexpected action:', action.type);
@@ -148,20 +153,17 @@ function caControlReducer(state, action) {
 }
 
 export function CaControl({ seed }) {
-    const [caControl, caControlDispatch] = useReducer(caControlReducer);
+    const { caControl, caControlDispatch } = useContext(CaControlContext);
     const { caSettings } = useContext(CaSettingsContext);
     const onceAliveRef = useRef(new Array(GRID_SIZE * GRID_SIZE));
     const canvasRef = useRef(null);
 
-    const clearonceAlive = () => {
+    const clearOnceAlive = () => {
         onceAliveRef.current.forEach((_, i, a) => { a[i] = 0; });
     }
 
     const reset = (ca) => {
-        clearonceAlive();
-        seedCa(ca, seed);
-
-        drawCells(drawContext(canvasRef), ca, onceAliveRef.current);
+        caControlDispatch({ type: 'initialize' });
     }
 
     const step = (ca) => {
@@ -171,11 +173,10 @@ export function CaControl({ seed }) {
 
     useEffect(() => {
         async function init() {
-            console.info("Loading CA wasm");
-
             const wasm = await wasmInit();
             const ca = new wasm.GameOfLife(caSettings.gridSize, caSettings.gridSize, caSettings.borderWraps);
             seedCa(ca, seed);
+            clearOnceAlive();
             caControlDispatch({ type: 'initialized', ca, seed });
         }
 
@@ -213,12 +214,6 @@ export function CaControl({ seed }) {
                 <canvas ref={canvasRef}
                     width={(CELL_SIZE + 1) * GRID_SIZE}
                     height={(CELL_SIZE + 1) * GRID_SIZE}></canvas>
-            </Col>
-        </Row>
-        <Row>
-            <Col>{caControl?.stats && 
-                <p>{caControl.stats.numAlive}/{caControl.stats.numOnceAlive}</p>
-            }
             </Col>
         </Row>
     </Container>);
