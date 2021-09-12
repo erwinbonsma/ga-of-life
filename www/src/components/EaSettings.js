@@ -19,7 +19,7 @@ export const initialEaSettings = {
     fitnessNumToggledSteps: 0.0,
     fitnessMaxAliveCells: 0.0,
     fitnessMaxAliveSteps: 0.0,
-    fitnessNumStartCells: -0.1,
+    fitnessNumStartCells: 0.0,
 };
 
 function bound(value, min, max) {
@@ -45,19 +45,19 @@ export function eaSettingsReducer(state, action) {
             ...state, elitism: action.value
         };
         case 'fitnessNumToggledCells': return {
-            ...state, fitnessNumToggledCells: bound(action.value, -1, 1)
+            ...state, fitnessNumToggledCells: bound(action.value, -100, 100)
         };
         case 'fitnessNumToggledSteps': return {
-            ...state, fitnessNumToggledSteps: bound(action.value, -1, 1)
+            ...state, fitnessNumToggledSteps: bound(action.value, -100, 100)
         };
         case 'fitnessMaxAliveCells': return {
-            ...state, fitnessMaxAliveCells: bound(action.value, -1, 1)
+            ...state, fitnessMaxAliveCells: bound(action.value, -100, 100)
         };
         case 'fitnessMaxAliveSteps': return {
-            ...state, fitnessMaxAliveSteps: bound(action.value, -1, 1)
+            ...state, fitnessMaxAliveSteps: bound(action.value, -100, 100)
         };
         case 'fitnessNumStartCells': return {
-            ...state, fitnessNumStartCells: bound(action.value, -1, 1)
+            ...state, fitnessNumStartCells: bound(action.value, -100, 100)
         };
         default:
             console.error('Unexpected action:', action.type);
@@ -112,14 +112,14 @@ export function EaSettings() {
             'formNumToggledCells',
             'Number of toggled cells',
             eaSettings.fitnessNumToggledCells,
-            0.1,
+            1,
             'fitnessNumToggledCells'
         )}
         { NumericFormField(
             'formNumToggledSteps',
             'Steps to reach',
             eaSettings.fitnessNumToggledSteps,
-            0.1,
+            1,
             'fitnessNumToggledSteps',
             !numToggledFitnessEnabled,
             true
@@ -128,14 +128,14 @@ export function EaSettings() {
             'formMaxAliveCells',
             'Maximum alive cells',
             eaSettings.fitnessMaxAliveCells,
-            0.1,
+            1,
             'fitnessMaxAliveCells'
         )}
         { NumericFormField(
             'formMaxAliveSteps',
             'Step to reach',
             maxAliveFitnessEnabled ? eaSettings.fitnessMaxAliveSteps : 0,
-            0.1,
+            1,
             'fitnessMaxAliveSteps',
             !maxAliveFitnessEnabled,
             true
@@ -144,7 +144,7 @@ export function EaSettings() {
             'formNumStartCells',
             'Number of cells at start',
             eaSettings.fitnessNumStartCells,
-            0.1,
+            1,
             'fitnessNumStartCells'
         )}
         <h2>Solver Settings</h2>

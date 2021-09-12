@@ -31,7 +31,7 @@ export function EaStatistics() {
         </Row>
         <Row>
             <Col className="Label" xs={8}>Max. fitness</Col>
-            <Col className="NumValue" xs={4}>{eaState.maxFitness}</Col>
+            <Col className="NumValue" xs={4}>{Math.round(eaState.maxFitness)}</Col>
         </Row>
         <Row>
             <Col className="Label" xs={8}>Avg. fitness</Col>
