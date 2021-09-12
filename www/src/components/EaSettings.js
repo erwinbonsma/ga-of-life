@@ -80,7 +80,19 @@ export function EaSettings() {
                 </Col>
             </Form.Group>
         );
-    }
+    };
+    function CheckBoxFormField(id, label, value, actionType, dispatch) {
+        return (
+            <Form.Group as={Row} controlId={id}>
+                <Form.Label column sm={6}>{label}</Form.Label>
+                <Col sm={6}>
+                    <Form.Check type="checkbox" 
+                        checked={value}
+                        onChange={e => dispatch({ type: actionType, value: e.target.checked })} />
+                </Col>
+            </Form.Group>
+        );
+    };
 
     const maxAliveFitnessEnabled = Math.abs(eaSettings.fitnessMaxAliveCells) >= 0.01;
     const numToggledFitnessEnabled = Math.abs(eaSettings.fitnessNumToggledCells) >= 0.01;
@@ -88,14 +100,13 @@ export function EaSettings() {
     return <Form>
         <h2>Problem Settings</h2>
         <h5>CA Settings</h5>
-        <Form.Group as={Row} controlId="formBorderWraps">
-            <Form.Label column sm={6}>Border wraps</Form.Label>
-            <Col sm={6}>
-                <Form.Check type="checkbox" 
-                    checked={caSettings.borderWraps}
-                    onChange={e => caSettingsDispatch({ type: 'borderWraps', value: e.target.checked })} />
-            </Col>
-        </Form.Group>
+        { CheckBoxFormField(
+            'formBorderWraps',
+            'Enable border wrap',
+            caSettings.borderWraps,
+            'borderWraps',
+            caSettingsDispatch
+        )}
         <h5>Fitness</h5>
         { NumericFormField(
             'formNumToggledCells',
@@ -165,14 +176,13 @@ export function EaSettings() {
             1,
             'tournamentSize'
         )}
-        <Form.Group as={Row} controlId="formElitism">
-            <Form.Label column sm={6}>Use elitism</Form.Label>
-            <Col sm={6}>
-                <Form.Check type="checkbox" 
-                    checked={eaSettings.elitism}
-                    onChange={e => eaSettingsDispatch({ type: 'elitism', value: e.target.checked })} />
-            </Col>
-        </Form.Group>
+        { CheckBoxFormField(
+            'formElitism',
+            'Use elitism',
+            eaSettings.elitism,
+            'elitism',
+            eaSettingsDispatch
+        )}
         <Button variant="primary" type="submit"
             onClick={() => eaControlDispatch({ type: 'initialize', settings: { ...eaSettings, ...caSettings }})} >
             Start
