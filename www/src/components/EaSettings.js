@@ -1,6 +1,7 @@
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Col from 'react-bootstrap/Col';
+import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import React, { useContext } from 'react';
 
@@ -72,9 +73,9 @@ export function EaSettings() {
     function NumericFormField(id, label, value, stepSize, actionType, disabled, indent) {
         return (
             <Form.Group as={Row} controlId={id} key={id}>
-                { indent && <Col sm={1} /> }
-                <Form.Label column sm={indent ? 5 : 6}>{label}</Form.Label>
-                <Col sm={6}>
+                { indent && <Col xs={1} /> }
+                <Form.Label column xs={indent ? 7 : 8}>{label}</Form.Label>
+                <Col xs={4}>
                     <Form.Control type="number" step={stepSize} value={value} disabled={disabled}
                         onChange={e => eaSettingsDispatch({ type: actionType, value: e.target.value })} />
                 </Col>
@@ -84,8 +85,8 @@ export function EaSettings() {
     function CheckBoxFormField(id, label, value, actionType, dispatch) {
         return (
             <Form.Group as={Row} controlId={id}>
-                <Form.Label column sm={6}>{label}</Form.Label>
-                <Col sm={6}>
+                <Form.Label column xs={8}>{label}</Form.Label>
+                <Col xs={4}>
                     <Form.Check type="checkbox" 
                         checked={value}
                         onChange={e => dispatch({ type: actionType, value: e.target.checked })} />
@@ -97,95 +98,113 @@ export function EaSettings() {
     const maxAliveFitnessEnabled = Math.abs(eaSettings.fitnessMaxAliveCells) >= 0.01;
     const numToggledFitnessEnabled = Math.abs(eaSettings.fitnessNumToggledCells) >= 0.01;
     
-    return <Form>
-        <h2>Problem Settings</h2>
-        <h5>CA Settings</h5>
-        { CheckBoxFormField(
-            'formBorderWraps',
-            'Enable border wrap',
-            caSettings.borderWraps,
-            'borderWraps',
-            caSettingsDispatch
-        )}
-        <h5>Fitness</h5>
-        { NumericFormField(
-            'formNumToggledCells',
-            'Number of toggled cells',
-            eaSettings.fitnessNumToggledCells,
-            1,
-            'fitnessNumToggledCells'
-        )}
-        { NumericFormField(
-            'formNumToggledSteps',
-            'Steps to reach',
-            eaSettings.fitnessNumToggledSteps,
-            1,
-            'fitnessNumToggledSteps',
-            !numToggledFitnessEnabled,
-            true
-        )}
-        { NumericFormField(
-            'formMaxAliveCells',
-            'Maximum alive cells',
-            eaSettings.fitnessMaxAliveCells,
-            1,
-            'fitnessMaxAliveCells'
-        )}
-        { NumericFormField(
-            'formMaxAliveSteps',
-            'Step to reach',
-            maxAliveFitnessEnabled ? eaSettings.fitnessMaxAliveSteps : 0,
-            1,
-            'fitnessMaxAliveSteps',
-            !maxAliveFitnessEnabled,
-            true
-        )}
-        { NumericFormField(
-            'formNumStartCells',
-            'Number of cells at start',
-            eaSettings.fitnessNumStartCells,
-            1,
-            'fitnessNumStartCells'
-        )}
-        <h2>Solver Settings</h2>
-        { NumericFormField(
-            'formPopulationSize',
-            'Population size',
-            eaSettings.populationSize,
-            10,
-            'populationSize'
-        )}
-        { NumericFormField(
-            'formRecombinationRate',
-            'Recombination rate',
-            eaSettings.recombinationRate,
-            0.1,
-            'recombinationRate'
-        )}
-        { NumericFormField(
-            'formMutationRate',
-            'Mutation rate',
-            eaSettings.mutationRate,
-            0.1,
-            'mutationRate'
-        )}
-        { NumericFormField(
-            'formTournamentSize',
-            'Tournament size',
-            eaSettings.tournamentSize,
-            1,
-            'tournamentSize'
-        )}
-        { CheckBoxFormField(
-            'formElitism',
-            'Use elitism',
-            eaSettings.elitism,
-            'elitism',
-            eaSettingsDispatch
-        )}
-        <Button variant="primary" type="submit"
-            onClick={() => eaControlDispatch({ type: 'initialize', settings: { ...eaSettings, ...caSettings }})} >
-            Start
-        </Button>
+    return <Form as={Container}>
+        <Row>
+            <Col><h1>Settings</h1></Col>
+        </Row>
+        <Row className="SettingsRow pt-2 mt-2 mb-2">
+            <Col sm={12} md={3}><h5>CA</h5></Col>
+            <Col sm={12} md={9}>
+                { CheckBoxFormField(
+                    'formBorderWraps',
+                    'Enable border wrap',
+                    caSettings.borderWraps,
+                    'borderWraps',
+                    caSettingsDispatch
+                )}
+            </Col>
+        </Row>
+        <Row className="SettingsRow pt-2 mt-2 mb-2">
+            <Col sm={12} md={3}><h5>Fitness</h5></Col>
+            <Col sm={12} md={9}>
+                { NumericFormField(
+                    'formNumToggledCells',
+                    'Number of toggled cells',
+                    eaSettings.fitnessNumToggledCells,
+                    1,
+                    'fitnessNumToggledCells'
+                )}
+                { NumericFormField(
+                    'formNumToggledSteps',
+                    'Steps to reach',
+                    eaSettings.fitnessNumToggledSteps,
+                    1,
+                    'fitnessNumToggledSteps',
+                    !numToggledFitnessEnabled,
+                    true
+                )}
+                { NumericFormField(
+                    'formMaxAliveCells',
+                    'Maximum alive cells',
+                    eaSettings.fitnessMaxAliveCells,
+                    1,
+                    'fitnessMaxAliveCells'
+                )}
+                { NumericFormField(
+                    'formMaxAliveSteps',
+                    'Step to reach',
+                    maxAliveFitnessEnabled ? eaSettings.fitnessMaxAliveSteps : 0,
+                    1,
+                    'fitnessMaxAliveSteps',
+                    !maxAliveFitnessEnabled,
+                    true
+                )}
+                { NumericFormField(
+                    'formNumStartCells',
+                    'Number of cells at start',
+                    eaSettings.fitnessNumStartCells,
+                    1,
+                    'fitnessNumStartCells'
+                )}
+            </Col>
+        </Row>
+        <Row className="SettingsRow pt-2 mt-2 mb-2">
+            <Col sm={12} md={3}><h5>Solver</h5></Col>
+            <Col sm={12} md={9}>
+                { NumericFormField(
+                    'formPopulationSize',
+                    'Population size',
+                    eaSettings.populationSize,
+                    10,
+                    'populationSize'
+                )}
+                { NumericFormField(
+                    'formRecombinationRate',
+                    'Recombination rate',
+                    eaSettings.recombinationRate,
+                    0.1,
+                    'recombinationRate'
+                )}
+                { NumericFormField(
+                    'formMutationRate',
+                    'Mutation rate',
+                    eaSettings.mutationRate,
+                    0.1,
+                    'mutationRate'
+                )}
+                { NumericFormField(
+                    'formTournamentSize',
+                    'Tournament size',
+                    eaSettings.tournamentSize,
+                    1,
+                    'tournamentSize'
+                )}
+                { CheckBoxFormField(
+                    'formElitism',
+                    'Use elitism',
+                    eaSettings.elitism,
+                    'elitism',
+                    eaSettingsDispatch
+                )}
+            </Col>
+        </Row>
+        <Row>
+            <Col><center>
+            <Button variant="primary" type="submit"
+                onClick={() => eaControlDispatch({ type: 'initialize', settings: { ...eaSettings, ...caSettings }})} >
+                Start
+            </Button>
+            </center></Col>
+        </Row>
     </Form>
 }
