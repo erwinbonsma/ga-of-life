@@ -101,7 +101,7 @@ export function EaSettings() {
             </Col>
         </Form.Group>
         <Button variant="primary" type="submit"
-            onClick={() => eaControlDispatch({ type: 'initialize', settings: eaSettings })} >
+            onClick={() => eaControlDispatch({ type: 'initialize', settings: { ...eaSettings, ...caSettings }})} >
             Start
         </Button>
     </Form>
