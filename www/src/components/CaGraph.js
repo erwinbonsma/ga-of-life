@@ -7,6 +7,7 @@ require('highcharts/modules/exporting')(Highcharts);
 
 export function CaGraph() {
     const [numStepsPlotted, setNumStepsPlotted] = useState(0);
+    const [maxNumAlive, setMaxNumAlive] = useState(0);
     const [chart, setChart] = useState();
 
     const { caControl } = useContext(CaControlContext);
@@ -58,17 +59,25 @@ export function CaGraph() {
                 chart.destroy();
                 initChart();
 
-                setNumStepsPlotted(0);                
+                setNumStepsPlotted(0);
+                setMaxNumAlive(0);
             }
-        } else {
-            if (caControl.numSteps % 10 === 0 && caControl.numSteps !== numStepsPlotted ) {
-                chart.series[0].addPoint([caControl.numSteps, caState.numAlive], true, false);
+        } else if (caControl.numSteps !== numStepsPlotted ) {
+            // Track and plot the maximum value over the window that is summarized by one data
+            // point in the plot. This way, the plot always shows the maximum that was reached.
+            const newMaxNumAlive = Math.max(maxNumAlive, caState.numAlive);
+            if (caControl.numSteps % 10 === 0) {
+                chart.series[0].addPoint([caControl.numSteps, newMaxNumAlive], true, false);
                 chart.series[1].addPoint([caControl.numSteps, caState.numOnceAlive], true, false);
 
-                setNumStepsPlotted(caControl.numSteps);
+                setMaxNumAlive(0);
+            } else {
+                setMaxNumAlive(newMaxNumAlive);
             }
+            // Track that data point is handled (even if it is not plotted yet)
+            setNumStepsPlotted(caControl.numSteps);
         }
-    }, [caState, caControl?.numSteps, numStepsPlotted, chart])
+    }, [caState, caControl?.numSteps, numStepsPlotted, maxNumAlive, chart])
 
     useEffect(() => {
         initChart();
