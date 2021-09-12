@@ -14,8 +14,6 @@ function settings_to_wasm(settings) {
         .set_tournament_size(settings.tournamentSize)
         .set_elitism(settings.elitism)
 
-    console.log({ settings });
-
     return ea_settings;
 }
 
