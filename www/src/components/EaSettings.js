@@ -99,14 +99,14 @@ export function EaSettings() {
         <h5>Fitness</h5>
         { NumericFormField(
             'formNumToggledCells',
-            'Number of toggled cells:',
+            'Number of toggled cells',
             eaSettings.fitnessNumToggledCells,
             0.1,
             'fitnessNumToggledCells'
         )}
         { NumericFormField(
             'formNumToggledSteps',
-            'Steps to reach:',
+            'Steps to reach',
             eaSettings.fitnessNumToggledSteps,
             0.1,
             'fitnessNumToggledSteps',
@@ -115,14 +115,14 @@ export function EaSettings() {
         )}
         { NumericFormField(
             'formMaxAliveCells',
-            'Maximum alive cells:',
+            'Maximum alive cells',
             eaSettings.fitnessMaxAliveCells,
             0.1,
             'fitnessMaxAliveCells'
         )}
         { NumericFormField(
             'formMaxAliveSteps',
-            'Step to reach:',
+            'Step to reach',
             maxAliveFitnessEnabled ? eaSettings.fitnessMaxAliveSteps : 0,
             0.1,
             'fitnessMaxAliveSteps',
@@ -131,44 +131,40 @@ export function EaSettings() {
         )}
         { NumericFormField(
             'formNumStartCells',
-            'Number of cells at start:',
+            'Number of cells at start',
             eaSettings.fitnessNumStartCells,
             0.1,
             'fitnessNumStartCells'
         )}
         <h2>Solver Settings</h2>
-        <Form.Group as={Row} controlId="formPopulationSize">
-            <Form.Label column sm={6}>Population size</Form.Label>
-            <Col sm={6}>
-                <Form.Control type="number" step="10"
-                    value={eaSettings.populationSize}
-                    onChange={e => eaSettingsDispatch({ type: 'populationSize', value: e.target.value })} />
-            </Col>
-        </Form.Group>
-        <Form.Group as={Row} controlId="formRecombinationRate">
-            <Form.Label column sm={6}>Recombination rate</Form.Label>
-            <Col sm={6}>
-                <Form.Control type="number" step="0.1"
-                    value={eaSettings.recombinationRate}
-                    onChange={e => eaSettingsDispatch({ type: 'recombinationRate', value: e.target.value })} />
-            </Col>
-        </Form.Group>
-        <Form.Group as={Row} controlId="formMutationRate">
-            <Form.Label column sm={6}>Mutation rate</Form.Label>
-            <Col sm={6}>
-                <Form.Control type="number" step="0.1"
-                    value={eaSettings.mutationRate}
-                    onChange={e => eaSettingsDispatch({ type: 'mutationRate', value: e.target.value })} />
-            </Col>
-        </Form.Group>
-        <Form.Group as={Row} controlId="formTournamentSize">
-            <Form.Label column sm={6}>Tournament size</Form.Label>
-            <Col sm={6}>
-                <Form.Control type="number" step="1"
-                    value={eaSettings.tournamentSize}
-                    onChange={e => eaSettingsDispatch({ type: 'tournamentSize', value: e.target.value })} />
-            </Col>
-        </Form.Group>
+        { NumericFormField(
+            'formPopulationSize',
+            'Population size',
+            eaSettings.populationSize,
+            10,
+            'populationSize'
+        )}
+        { NumericFormField(
+            'formRecombinationRate',
+            'Recombination rate',
+            eaSettings.recombinationRate,
+            0.1,
+            'recombinationRate'
+        )}
+        { NumericFormField(
+            'formMutationRate',
+            'Mutation rate',
+            eaSettings.mutationRate,
+            0.1,
+            'mutationRate'
+        )}
+        { NumericFormField(
+            'formTournamentSize',
+            'Tournament size',
+            eaSettings.tournamentSize,
+            1,
+            'tournamentSize'
+        )}
         <Form.Group as={Row} controlId="formElitism">
             <Form.Label column sm={6}>Use elitism</Form.Label>
             <Col sm={6}>
