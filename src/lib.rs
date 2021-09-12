@@ -12,7 +12,7 @@ pub mod ga;
 
 use std::any::Any;
 use std::fmt::{Debug, Display, Formatter, Result};
-use ca::{BitGrid, GameOfLife, GameOfLifeRunner};
+use ca::{BitGrid, GameOfLife, GameOfLifeRunner, RunStats};
 use ga::{
     EvolutionaryAlgorithm,
     Phenotype,
@@ -53,10 +53,17 @@ pub struct MyPhenotype {
     bit_grid: BitGrid,
 }
 
+trait FitnessCalculator {
+    fn calculate_fitness(&self, run_stats: &RunStats) -> f32;
+}
+
+struct MaxOnceAliveFitness {}
+
 struct MyEvaluator {
     gol: GameOfLife,
     gol_runner: GameOfLifeRunner,
     num_ca_steps: u32,
+    fitness_calculator: Box<dyn FitnessCalculator>,
 }
 
 #[derive(Debug)]
@@ -221,11 +228,16 @@ impl Expressor<BinaryChromosome, MyPhenotype> for MyNeutralExpressor {
 }
 
 impl MyEvaluator {
-    pub fn new(garden_size: usize, wrap_border: bool) -> Self {
+    pub fn new(
+        garden_size: usize,
+        wrap_border: bool,
+        fitness_calculator: Box<dyn FitnessCalculator>
+    ) -> Self {
         MyEvaluator {
             gol: GameOfLife::new(garden_size, garden_size, wrap_border),
             gol_runner: GameOfLifeRunner::new(100, 2.0),
             num_ca_steps: 0,
+            fitness_calculator,
         }
     }
 
@@ -246,8 +258,6 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
     fn evaluate(&mut self, phenotype: &MyPhenotype) -> f32 {
         self.gol.reset();
 
-        let total_garden_cells = self.gol.num_cells();
-
         let x0 = (self.gol.width() - SEED_PATCH_SIZE) / 2;
         let y0 = (self.gol.height() - SEED_PATCH_SIZE) / 2;
         for x in 0..SEED_PATCH_SIZE {
@@ -259,21 +269,26 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
         }
 
         let stats = self.gol_runner.run(&mut self.gol);
-
         self.num_ca_steps += stats.num_steps;
 
-        (
-            // Reward total garden cells toggled
-            2 * (stats.num_toggled as i32 - total_garden_cells as i32) +
-            // Reward fewer seed cells
-            TOTAL_SEED_CELLS as i32 - stats.ini_cells as i32
-        ) as f32 
-            // Reward quick coverage of garden
-            //+ 1.0 / (stats.num_toggled_steps as f32 + 1.0)
+        self.fitness_calculator.calculate_fitness(&stats)
     }
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+impl MaxOnceAliveFitness {
+    fn new() -> Self {
+        MaxOnceAliveFitness {}
+    }
+}
+
+impl FitnessCalculator for MaxOnceAliveFitness {
+    fn calculate_fitness(&self, stats: &RunStats) -> f32 {
+        // Reward total garden cells toggled
+        stats.num_toggled as f32
     }
 }
 
@@ -315,7 +330,11 @@ pub fn setup_ga(settings: &MyEaSettings) -> EvolutionaryAlgorithm<BinaryChromoso
         settings.population_size,
         Box::new(MyConfig::new(expressor.genotype_length())),
         Box::new(expressor),
-        Box::new(MyEvaluator::new(settings.garden_size, settings.wrap_border)),
+        Box::new(MyEvaluator::new(
+            settings.garden_size,
+            settings.wrap_border,
+            Box::new(MaxOnceAliveFitness::new())
+        )),
         if settings.elitism {
             Box::new(ElitismSelection::new(1, main_selector))
         } else {
