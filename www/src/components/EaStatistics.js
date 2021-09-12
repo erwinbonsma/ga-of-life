@@ -34,6 +34,10 @@ export function EaStatistics() {
             <Col className="NumValue" xs={4}>{eaState.maxFitness}</Col>
         </Row>
         <Row>
+            <Col className="Label" xs={8}>Avg. fitness</Col>
+            <Col className="NumValue" xs={4}>{Math.round(eaState.avgFitness)}</Col>
+        </Row>
+        <Row>
             <Col className="Label" xs={8}>Run time [s]</Col>
             <Col className="NumValue" xs={4}>{Math.round(runTimeInSeconds)}</Col>
         </Row>
