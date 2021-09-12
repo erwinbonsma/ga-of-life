@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useReducer } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
