@@ -186,7 +186,7 @@ export function CaControl({ seed }) {
             drawGrid(drawContext(canvasRef));
             drawCells(drawContext(canvasRef), caControl.ca, onceAliveRef.current);
         }
-    }, [seed, caControl?.ca, caControl?.seed, caSettings]);
+    }, [seed, caControl?.ca, caControl?.seed, caSettings, caControlDispatch]);
 
     useEffect(() => {
         if (caControl?.autoRun) {
