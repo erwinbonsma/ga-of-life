@@ -57,8 +57,6 @@ trait FitnessCalculator {
     fn calculate_fitness(&self, run_stats: &RunStats) -> f32;
 }
 
-struct MaxOnceAliveFitness {}
-
 struct MyEvaluator {
     gol: GameOfLife,
     gol_runner: GameOfLifeRunner,
@@ -74,12 +72,29 @@ struct MyConfig {
 }
 
 #[wasm_bindgen]
+#[derive(Copy, Clone, Debug)]
+pub struct FitnessWeights {
+    pub num_toggled_cells: f32,
+    pub num_toggled_steps: f32,
+    pub max_alive_cells: f32,
+    pub max_alive_steps: f32,
+    pub num_start_cells: f32,
+}
+
+struct WeightedFitness {
+    fitness_weights: FitnessWeights,
+}
+
+#[wasm_bindgen]
 #[derive(Debug)]
 // This struct contains the settings that can be modified by the user
 pub struct MyEaSettings {
     // Problem settings
     garden_size: usize,
     wrap_border: bool,
+
+    // Fitness weights
+    fitness_weights: FitnessWeights,
 
     // Optimization settings
     mutation_rate: f32,
@@ -279,16 +294,21 @@ impl Evaluator<MyPhenotype> for MyEvaluator {
     }
 }
 
-impl MaxOnceAliveFitness {
-    fn new() -> Self {
-        MaxOnceAliveFitness {}
+impl WeightedFitness {
+    fn new(fitness_weights: FitnessWeights) -> Self {
+        WeightedFitness {
+            fitness_weights: fitness_weights
+        }
     }
 }
 
-impl FitnessCalculator for MaxOnceAliveFitness {
+impl FitnessCalculator for WeightedFitness {
     fn calculate_fitness(&self, stats: &RunStats) -> f32 {
-        // Reward total garden cells toggled
-        stats.num_toggled as f32
+        (stats.num_toggled as f32) * self.fitness_weights.num_toggled_cells
+        + (stats.num_toggled_steps as f32) * self.fitness_weights.num_toggled_steps
+        + (stats.max_cells as f32) * self.fitness_weights.max_alive_cells
+        + (stats.max_cells_steps as f32) * self.fitness_weights.max_alive_steps
+        + (stats.ini_cells as f32) * self.fitness_weights.num_start_cells
     }
 }
 
@@ -333,7 +353,7 @@ pub fn setup_ga(settings: &MyEaSettings) -> EvolutionaryAlgorithm<BinaryChromoso
         Box::new(MyEvaluator::new(
             settings.garden_size,
             settings.wrap_border,
-            Box::new(MaxOnceAliveFitness::new())
+            Box::new(WeightedFitness::new(settings.fitness_weights))
         )),
         if settings.elitism {
             Box::new(ElitismSelection::new(1, main_selector))
@@ -354,12 +374,26 @@ impl MyEvolutionaryAlgorithm {
 }
 
 #[wasm_bindgen]
+impl FitnessWeights {
+    pub fn new() -> Self {
+        FitnessWeights {
+            num_toggled_cells: 1.0,
+            num_toggled_steps: 0.0,
+            max_alive_cells: 0.0,
+            max_alive_steps: 0.0,
+            num_start_cells: 0.0,
+        }
+    }
+}
+
+#[wasm_bindgen]
 impl MyEaSettings {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         MyEaSettings {
             garden_size: 64,
             wrap_border: false,
+            fitness_weights: FitnessWeights::new(),
             mutation_rate: 0.9,
             recombination_rate: 0.4,
             population_size: 100,
@@ -382,6 +416,27 @@ impl MyEaSettings {
     }
     pub fn border_wraps(&self) -> bool {
         self.wrap_border
+    }
+
+    pub fn set_fw_num_toggled_cells(mut self, value: f32) -> Self {
+        self.fitness_weights.num_toggled_cells = value;
+        self
+    }
+    pub fn set_fw_num_toggled_steps(mut self, value: f32) -> Self {
+        self.fitness_weights.num_toggled_steps = value;
+        self
+    }
+    pub fn set_fw_max_alive_cells(mut self, value: f32) -> Self {
+        self.fitness_weights.max_alive_cells = value;
+        self
+    }
+    pub fn set_fw_max_alive_steps(mut self, value: f32) -> Self {
+        self.fitness_weights.max_alive_steps = value;
+        self
+    }
+    pub fn set_fw_num_start_cells(mut self, value: f32) -> Self {
+        self.fitness_weights.num_start_cells = value;
+        self
     }
 
     pub fn set_mutation_rate(mut self, mutation_rate: f32) -> Self {

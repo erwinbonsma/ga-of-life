@@ -13,6 +13,11 @@ function settings_to_wasm(settings) {
         .set_population_size(settings.populationSize)
         .set_tournament_size(settings.tournamentSize)
         .set_elitism(settings.elitism)
+        .set_fw_num_toggled_cells(settings.fitnessNumToggledCells)
+        .set_fw_num_toggled_steps(settings.fitnessNumToggledSteps)
+        .set_fw_max_alive_cells(settings.fitnessMaxAliveCells)
+        .set_fw_max_alive_steps(settings.fitnessMaxAliveSteps)
+        .set_fw_num_start_cells(settings.fitnessNumStartCells)
 
     return ea_settings;
 }
