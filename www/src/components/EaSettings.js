@@ -71,6 +71,10 @@ export function EaSettings() {
     const { eaControlDispatch } = useContext(EaControlContext);
 
     function NumericFormField(id, label, value, stepSize, actionType, disabled, indent) {
+        if (stepSize * 20 <= Math.abs(value)) {
+            stepSize *= 10;
+        }
+
         return (
             <Form.Group as={Row} controlId={id} key={id}>
                 { indent && <Col xs={1} /> }
