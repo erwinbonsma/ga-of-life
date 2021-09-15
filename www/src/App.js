@@ -10,6 +10,7 @@ import { CaSettingsContext, caSettingsReducer, initialCaSettings } from './compo
 import { EaControlContext, eaControlReducer, initialEaControlState } from './components/EaControl';
 import { Ca } from './pages/Ca'
 import { Ea } from './pages/Ea'
+import { Help } from './pages/Help'
 
 function App() {
     const [caSettings, caSettingsDispatch] = useReducer(caSettingsReducer, initialCaSettings);
@@ -23,6 +24,7 @@ function App() {
                     <Nav defaultActiveKey="#/">
                         <Nav.Link href="#/" >EA</Nav.Link>
                         <Nav.Link href="#/ca" >CA</Nav.Link>
+                        <Nav.Link href="#/help" >Help</Nav.Link>
                     </Nav>
                 </Container>
             </Navbar>
@@ -35,6 +37,9 @@ function App() {
                             </Route>
                             <Route exact path="/ca">
                                 <Ca seed={eaControl?.eaState?.bestPhenotype} />
+                            </Route>
+                            <Route exact path="/help">
+                                <Help />
                             </Route>
                             <Route path="*">
                                 <p>Page not found</p>
