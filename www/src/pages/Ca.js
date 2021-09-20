@@ -21,10 +21,10 @@ export function Ca({ seed }) {
     return (seed && <Container>
         <Row>
             <CaControlContext.Provider value={{ caControl, caControlDispatch }}>
-                <Col lg={4} xs={6}>
+                <Col>
                     <CaControl seed={seed} />
                 </Col>
-                <Col lg={8} xs={12}>
+                <Col>
                     <CaGraph />
                 </Col>
             </CaControlContext.Provider>

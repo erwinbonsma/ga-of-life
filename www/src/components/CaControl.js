@@ -1,13 +1,12 @@
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useCallback, useContext, useEffect, useRef } from 'react';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 
-import { GRID_SIZE, SEED_SIZE } from '../shared/Constants';
+import { MAX_GRID_SIZE, SEED_SIZE } from '../shared/Constants';
 import { bound } from '../shared/utils';
 
-const CELL_SIZE = 4;
 const GRID_COLOR = "#CCCCCC";
 const EMPTY_COLOR = "#FFFFFF";
 const ALIVE_COLOR = "#000000";
@@ -28,7 +27,7 @@ export function caSettingsReducer(state, action) {
             ...state, borderWraps: action.value
         };
         case 'gridSize': return {
-            ...state, gridSize: bound(action.value, 32, 128)
+            ...state, gridSize: bound(action.value, 32, MAX_GRID_SIZE)
         };
         default:
             console.error('Unexpected action:', action.type);
@@ -45,90 +44,6 @@ async function wasmInit() {
 
     return wasm;
 };
-
-function drawGrid(ctx) {
-    ctx.beginPath();
-    ctx.strokeStyle = GRID_COLOR;
-  
-    // Vertical lines.
-    for (let i = 0; i <= GRID_SIZE; i++) {
-        ctx.moveTo(i * (CELL_SIZE + 1) + 1, 0);
-        ctx.lineTo(i * (CELL_SIZE + 1) + 1, (CELL_SIZE + 1) * GRID_SIZE + 1);
-    }
-  
-    // Horizontal lines.
-    for (let j = 0; j <= GRID_SIZE; j++) {
-        ctx.moveTo(0,                               j * (CELL_SIZE + 1) + 1);
-        ctx.lineTo((CELL_SIZE + 1) * GRID_SIZE + 1, j * (CELL_SIZE + 1) + 1);
-    }
-  
-    ctx.stroke();
-}
-
-function drawCells(ctx, ca, onceAlive) {
-    ctx.beginPath();
-  
-    for (let row = 0; row < GRID_SIZE; row++) {
-        for (let col = 0; col < GRID_SIZE; col++) {
-        
-            if (ca.get(col, row)) {
-                ctx.fillStyle = ALIVE_COLOR;
-            } else if (onceAlive[col + row * GRID_SIZE]) {
-                ctx.fillStyle = LIVED_COLOR;
-            } else {
-                ctx.fillStyle = EMPTY_COLOR;
-            }
-  
-            ctx.fillRect(
-                col * (CELL_SIZE + 1) + 1,
-                row * (CELL_SIZE + 1) + 1,
-                CELL_SIZE,
-                CELL_SIZE
-            );
-        }
-    }
-  
-    ctx.stroke();
-}
-
-function drawContext(canvasRef) {
-    return canvasRef?.current?.getContext('2d');
-}
-
-function updateCaStats(ca, onceAlive) {
-    let numAlive = 0;
-    for (let row = 0; row < GRID_SIZE; row++) {
-        for (let col = 0; col < GRID_SIZE; col++) {
-            if (ca.get(col, row)) {
-                onceAlive[col + row * GRID_SIZE] = true;
-                numAlive += 1;
-            }
-        }
-    }
-
-    return { numAlive, numOnceAlive: onceAlive.filter(x => x).length };
-}
-
-function executeStep(ca, onceAlive, ctx) {
-    ca.step();
-    const stats = updateCaStats(ca, onceAlive);
-    drawCells(ctx, ca, onceAlive);
-
-    return stats;
-}
-
-function seedCa(ca, seed) {
-    ca.reset();
-
-    const xy0 = (GRID_SIZE - SEED_SIZE) / 2;
-    for (let x = 0; x < SEED_SIZE; x++) {
-        for (let y = 0; y < SEED_SIZE; y++) {
-            if (seed.charAt(x + y * SEED_SIZE) !== '0') {
-                ca.set(x + xy0, y + xy0);
-            }
-        }
-    }
-}
 
 export function caControlReducer(state, action) {
     switch (action.type) {
@@ -156,27 +71,131 @@ export function caControlReducer(state, action) {
 export function CaControl({ seed }) {
     const { caControl, caControlDispatch } = useContext(CaControlContext);
     const { caSettings } = useContext(CaSettingsContext);
-    const onceAliveRef = useRef(new Array(GRID_SIZE * GRID_SIZE));
+    const onceAliveRef = useRef(new Array(caSettings.gridSize * caSettings.gridSize));
     const canvasRef = useRef(null);
 
-    const clearOnceAlive = () => {
-        onceAliveRef.current.forEach((_, i, a) => { a[i] = 0; });
-    }
+    const ctx = canvasRef.current?.getContext('2d');
+    const ca = caControl?.ca;
+    const onceAlive = onceAliveRef.current;
+    const gridWidth = caSettings.gridSize;
+    const gridHeight = caSettings.gridSize;
+    const cellSize = Math.max(4, Math.round(12 * 32 / Math.max(gridWidth, gridHeight)));
 
-    const reset = (ca) => {
-        caControlDispatch({ type: 'initialize' });
-    }
+    const seedCa = useCallback(
+        // Taking ca as arg, as it will be newly set
+        (ca) => {
+            ca.reset();
 
-    const step = (ca) => {
-        const stats = executeStep(ca, onceAliveRef.current, drawContext(canvasRef));
-        caControlDispatch({ type: 'executedStep', stats });
-    }
+            const x0 = (gridWidth - SEED_SIZE) / 2;
+            const y0 = (gridHeight - SEED_SIZE) / 2;
+            for (let x = 0; x < SEED_SIZE; x++) {
+                for (let y = 0; y < SEED_SIZE; y++) {
+                    if (seed.charAt(x + y * SEED_SIZE) !== '0') {
+                        ca.set(x + x0, y + y0);
+                    }
+                }
+            }
+        },
+        [seed, gridWidth, gridHeight]
+    )
+
+    const drawGrid = useCallback(
+        () => {
+            ctx.beginPath();
+            ctx.strokeStyle = GRID_COLOR;
+
+            // Vertical lines.
+            for (let i = 0; i <= gridWidth; i++) {
+                ctx.moveTo(i * (cellSize + 1) + 1, 0);
+                ctx.lineTo(i * (cellSize + 1) + 1, (cellSize + 1) * gridHeight + 1);
+            }
+
+            // Horizontal lines.
+            for (let j = 0; j <= gridHeight; j++) {
+                ctx.moveTo(0,                              j * (cellSize + 1) + 1);
+                ctx.lineTo((cellSize + 1) * gridWidth + 1, j * (cellSize + 1) + 1);
+            }
+
+            ctx.stroke();
+        },
+        [ctx, gridWidth, gridHeight, cellSize]
+    )
+
+    const drawCells = useCallback(
+        () => {
+            ctx.beginPath();
+            for (let row = 0; row < gridHeight; row++) {
+                for (let col = 0; col < gridWidth; col++) {
+
+                    if (ca.get(col, row)) {
+                        ctx.fillStyle = ALIVE_COLOR;
+                    } else if (onceAlive[col + row * gridWidth]) {
+                        ctx.fillStyle = LIVED_COLOR;
+                    } else {
+                        ctx.fillStyle = EMPTY_COLOR;
+                    }
+
+                    ctx.fillRect(
+                        col * (cellSize + 1) + 1,
+                        row * (cellSize + 1) + 1,
+                        cellSize,
+                        cellSize
+                    );
+                }
+            }
+
+            ctx.stroke();
+        },
+        [ctx, ca, gridWidth, gridHeight, cellSize, onceAlive]
+    );
+
+    const updateCaStats = useCallback(
+        () => {
+            let numAlive = 0;
+            for (let row = 0; row < gridHeight; row++) {
+                for (let col = 0; col < gridWidth; col++) {
+                    if (ca.get(col, row)) {
+                        onceAlive[col + row * gridWidth] = true;
+                        numAlive += 1;
+                    }
+                }
+            }
+
+            return { numAlive, numOnceAlive: onceAlive.filter(x => x).length };
+        },
+        [gridWidth, gridHeight, ca, onceAlive]
+    )
+
+    const step = useCallback(
+        () => {
+            ca.step();
+            const stats = updateCaStats();
+            drawCells();
+
+            caControlDispatch({ type: 'executedStep', stats });
+        },
+        [ca, drawCells, caControlDispatch, updateCaStats]
+    )
+
+    const clearOnceAlive = useCallback(
+        () => {
+            onceAlive.forEach((_, i, a) => { a[i] = 0; });
+        },
+        [onceAlive]
+    );
+
+    const reset = useCallback(
+        () => {
+            caControlDispatch({ type: 'initialize' });
+        },
+        [caControlDispatch]
+    );
 
     useEffect(() => {
         async function init() {
             const wasm = await wasmInit();
             const ca = new wasm.GameOfLife(caSettings.gridSize, caSettings.gridSize, caSettings.borderWraps);
-            seedCa(ca, seed);
+            seedCa(ca);
             clearOnceAlive();
             caControlDispatch({ type: 'initialized', ca, seed });
         }
@@ -184,15 +203,18 @@ export function CaControl({ seed }) {
         if (!caControl?.ca || caControl.seed !== seed) {
             init();
         } else {
-            drawGrid(drawContext(canvasRef));
-            drawCells(drawContext(canvasRef), caControl.ca, onceAliveRef.current);
+            drawGrid();
+            drawCells();
         }
-    }, [seed, caControl?.ca, caControl?.seed, caSettings, caControlDispatch]);
+    }, [
+        seed, caControl?.ca, caControl?.seed, caSettings, caControlDispatch,
+        seedCa, clearOnceAlive, drawGrid, drawCells
+    ]);
 
     useEffect(() => {
         if (caControl?.autoRun) {
             const timer = setTimeout(() => {
-                step(caControl.ca);
+                step();
             }, 10);
 
             return function cleanup() {
@@ -206,15 +228,15 @@ export function CaControl({ seed }) {
             <Col>
                 <Button onClick={() => caControlDispatch({ type: 'toggleAutoRun' })} disabled={!caControl || caControl.autoRun}>Play</Button>{' '}
                 <Button onClick={() => caControlDispatch({ type: 'toggleAutoRun' })} disabled={!caControl || !caControl.autoRun}>Pause</Button>{' '}
-                <Button onClick={() => step(caControl.ca)} disabled={!caControl || caControl.autoRun}>Step</Button>{' '}
-                <Button onClick={() => reset(caControl.ca)} disabled={!caControl || caControl.autoRun}>Reset</Button>
+                <Button onClick={() => step()} disabled={!caControl || caControl.autoRun}>Step</Button>{' '}
+                <Button onClick={() => reset()} disabled={!caControl || caControl.autoRun}>Reset</Button>
             </Col>
         </Row>
         <Row>
             <Col>
                 <canvas ref={canvasRef}
-                    width={(CELL_SIZE + 1) * GRID_SIZE}
-                    height={(CELL_SIZE + 1) * GRID_SIZE}></canvas>
+                    width={(cellSize + 1) * caSettings.gridSize}
+                    height={(cellSize + 1) * caSettings.gridSize}></canvas>
             </Col>
         </Row>
     </Container>);

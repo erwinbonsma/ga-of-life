@@ -8,6 +8,7 @@ let ea;
 function settings_to_wasm(settings) {
     const ea_settings = new wasm.MyEaSettings()
         .set_border(settings.borderWraps)
+        .set_garden_size(settings.gridSize)
         .set_mutation_rate(settings.mutationRate)
         .set_recombination_rate(settings.recombinationRate)
         .set_population_size(settings.populationSize)
