@@ -22,7 +22,7 @@ function App() {
                 <Container>
                     <Navbar.Brand href="#/" >Evolving Live</Navbar.Brand>
                     <Nav defaultActiveKey="#/">
-                        <Nav.Link href="#/" >EA</Nav.Link>
+                        <Nav.Link href="#/" >GA</Nav.Link>
                         <Nav.Link href="#/ca" >CA</Nav.Link>
                         <Nav.Link href="#/help" >Help</Nav.Link>
                     </Nav>

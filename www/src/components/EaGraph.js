@@ -19,7 +19,7 @@ export function EaGraph() {
         setChart(
             Highcharts.chart('ea-graph', {
                 title: {
-                    text: "Evolutionary Algorithm",
+                    text: "Optimization Progress",
                 },
                 yAxis: [{
                     title: {
