@@ -5,6 +5,7 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 
 import { GRID_SIZE, SEED_SIZE } from '../shared/Constants';
+import { bound } from '../shared/utils';
 
 const CELL_SIZE = 4;
 const GRID_COLOR = "#CCCCCC";
@@ -17,7 +18,7 @@ export const CaControlContext = React.createContext();
 
 export const initialCaSettings = {
     borderWraps: false,
-    gridSize: GRID_SIZE,
+    gridSize: 64,
 };
 export const initialCaControlState = undefined;
 
@@ -27,7 +28,7 @@ export function caSettingsReducer(state, action) {
             ...state, borderWraps: action.value
         };
         case 'gridSize': return {
-            ...state, gridSize: action.value
+            ...state, gridSize: bound(action.value, 32, 128)
         };
         default:
             console.error('Unexpected action:', action.type);

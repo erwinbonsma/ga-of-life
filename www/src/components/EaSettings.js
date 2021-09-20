@@ -7,6 +7,7 @@ import React, { useContext } from 'react';
 
 import { EaControlContext } from './EaControl';
 import { CaSettingsContext } from './CaControl';
+import { bound } from '../shared/utils';
 
 export const EaSettingsContext = React.createContext();
 
@@ -22,10 +23,6 @@ export const initialEaSettings = {
     fitnessMaxAliveSteps: 0.0,
     fitnessNumStartCells: 0.0,
 };
-
-function bound(value, min, max) {
-    return Math.max(Math.min(max, value), min);
-}
 
 export function eaSettingsReducer(state, action) {
     console.log("dispatched", state, action);
@@ -70,18 +67,28 @@ export function EaSettings() {
     const { eaSettings, eaSettingsDispatch } = useContext(EaSettingsContext);
     const { eaControlDispatch } = useContext(EaControlContext);
 
-    function NumericFormField(id, label, value, stepSize, actionType, disabled, indent) {
-        if (stepSize * 20 <= Math.abs(value)) {
-            stepSize *= 10;
-        }
+    function NumericFormField(
+        // Required variables
+        id, label, value, actionType,
+        // Optional variables
+        optionalProps = {}
+    ) {
+        const {
+            disabled = false,
+            indent = false,
+            dispatch = eaSettingsDispatch,
+            stepSize = 1
+        } = optionalProps;
+
+        const activeStepSize = (stepSize * 20 <= Math.abs(value)) ? stepSize * 10 : stepSize;
 
         return (
             <Form.Group as={Row} controlId={id} key={id}>
                 { indent && <Col xs={1} /> }
                 <Form.Label column xs={indent ? 7 : 8}>{label}</Form.Label>
                 <Col xs={4}>
-                    <Form.Control type="number" step={stepSize} value={value} disabled={disabled}
-                        onChange={e => eaSettingsDispatch({ type: actionType, value: e.target.value })} />
+                    <Form.Control type="number" step={activeStepSize} value={value} disabled={disabled}
+                        onChange={e => dispatch({ type: actionType, value: e.target.value })} />
                 </Col>
             </Form.Group>
         );
@@ -109,6 +116,16 @@ export function EaSettings() {
         <Row className="SettingsRow pt-2 mt-2 mb-2">
             <Col sm={12} md={3}><h5>CA</h5></Col>
             <Col sm={12} md={9}>
+                { NumericFormField(
+                    'formGridSize',
+                    'Grid size',
+                    caSettings.gridSize,
+                    'gridSize',
+                    {
+                        dispatch: caSettingsDispatch,
+                        stepSize: 16,
+                    }
+                )}
                 { CheckBoxFormField(
                     'formBorderWraps',
                     'Enable border wrap',
@@ -125,39 +142,38 @@ export function EaSettings() {
                     'formNumToggledCells',
                     'Number of toggled cells',
                     eaSettings.fitnessNumToggledCells,
-                    1,
                     'fitnessNumToggledCells'
                 )}
                 { NumericFormField(
                     'formNumToggledSteps',
                     'Steps to reach',
                     eaSettings.fitnessNumToggledSteps,
-                    1,
                     'fitnessNumToggledSteps',
-                    !numToggledFitnessEnabled,
-                    true
+                    {
+                        disabled: !numToggledFitnessEnabled,
+                        indent: true
+                    }
                 )}
                 { NumericFormField(
                     'formMaxAliveCells',
                     'Maximum alive cells',
                     eaSettings.fitnessMaxAliveCells,
-                    1,
                     'fitnessMaxAliveCells'
                 )}
                 { NumericFormField(
                     'formMaxAliveSteps',
                     'Step to reach',
                     maxAliveFitnessEnabled ? eaSettings.fitnessMaxAliveSteps : 0,
-                    1,
                     'fitnessMaxAliveSteps',
-                    !maxAliveFitnessEnabled,
-                    true
+                    {
+                        disabled: !maxAliveFitnessEnabled,
+                        indent: true
+                    }
                 )}
                 { NumericFormField(
                     'formNumStartCells',
                     'Number of cells at start',
                     eaSettings.fitnessNumStartCells,
-                    1,
                     'fitnessNumStartCells'
                 )}
             </Col>
@@ -169,28 +185,33 @@ export function EaSettings() {
                     'formPopulationSize',
                     'Population size',
                     eaSettings.populationSize,
-                    10,
-                    'populationSize'
+                    'populationSize',
+                    {
+                        stepSize: 10
+                    }
                 )}
                 { NumericFormField(
                     'formRecombinationRate',
                     'Recombination rate',
                     eaSettings.recombinationRate,
-                    0.1,
-                    'recombinationRate'
+                    'recombinationRate',
+                    {
+                        stepSize: 0.1
+                    }
                 )}
                 { NumericFormField(
                     'formMutationRate',
                     'Mutation rate',
                     eaSettings.mutationRate,
-                    0.1,
-                    'mutationRate'
+                    'mutationRate',
+                    {
+                        stepSize: 0.1
+                    }
                 )}
                 { NumericFormField(
                     'formTournamentSize',
                     'Tournament size',
                     eaSettings.tournamentSize,
-                    1,
                     'tournamentSize'
                 )}
                 { CheckBoxFormField(
