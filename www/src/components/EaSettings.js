@@ -93,7 +93,16 @@ export function EaSettings() {
             </Form.Group>
         );
     };
-    function CheckBoxFormField(id, label, value, actionType, dispatch) {
+    function CheckBoxFormField(
+        // Required variables
+        id, label, value, actionType,
+        // Optional variables
+        optionalProps = {}
+    ) {
+        const {
+            dispatch = eaSettingsDispatch
+        } = optionalProps;
+
         return (
             <Form.Group as={Row} controlId={id}>
                 <Form.Label column xs={8}>{label}</Form.Label>
@@ -131,7 +140,9 @@ export function EaSettings() {
                     'Enable border wrap',
                     caSettings.borderWraps,
                     'borderWraps',
-                    caSettingsDispatch
+                    {
+                        dispatch: caSettingsDispatch
+                    }
                 )}
             </Col>
         </Row>
@@ -218,8 +229,7 @@ export function EaSettings() {
                     'formElitism',
                     'Use elitism',
                     eaSettings.elitism,
-                    'elitism',
-                    eaSettingsDispatch
+                    'elitism'
                 )}
             </Col>
         </Row>
