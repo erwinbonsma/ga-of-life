@@ -3,11 +3,11 @@ use std::hash::{Hash};
 use core::cmp::max;
 use wasm_bindgen::prelude::*;
 
-type UnitType = u32;
-const BITS_PER_UNIT: usize = 32;
+type UnitType = u64;
+const BITS_PER_UNIT: usize = 64;
 
 #[wasm_bindgen]
-#[derive(clone::Clone, Hash, Eq, PartialEq)]
+#[derive(clone::Clone, Debug, Hash, Eq, PartialEq)]
 pub struct BitGrid {
     width: usize,
     height: usize,
@@ -183,6 +183,10 @@ impl BitCounter {
             count += self.lookup[((unit >> 8) & 255) as usize] as usize;
             count += self.lookup[((unit >> 16) & 255) as usize] as usize;
             count += self.lookup[((unit >> 24) & 255) as usize] as usize;
+            count += self.lookup[((unit >> 32) & 255) as usize] as usize;
+            count += self.lookup[((unit >> 40) & 255) as usize] as usize;
+            count += self.lookup[((unit >> 48) & 255) as usize] as usize;
+            count += self.lookup[((unit >> 56) & 255) as usize] as usize;
         }
         count
     }
@@ -217,6 +221,10 @@ impl BitCounter {
             count += self.lookup[((val >> 8) & 255) as usize] as usize;
             count += self.lookup[((val >> 16) & 255) as usize] as usize;
             count += self.lookup[((val >> 24) & 255) as usize] as usize;
+            count += self.lookup[((val >> 32) & 255) as usize] as usize;
+            count += self.lookup[((val >> 40) & 255) as usize] as usize;
+            count += self.lookup[((val >> 48) & 255) as usize] as usize;
+            count += self.lookup[((val >> 56) & 255) as usize] as usize;
         }
         count
     }
@@ -565,11 +573,11 @@ mod tests {
 
     #[test]
     fn grid_invert() {
-        let mut bit_grid = BitGrid::new(32, 3);
+        let mut bit_grid = BitGrid::new(BITS_PER_UNIT, 3);
         let bc = BitCounter::new();
 
         bit_grid.toggle_all();
-        assert_eq!(bc.count_set_bits(&bit_grid), 32 * 3);
+        assert_eq!(bc.count_set_bits(&bit_grid), BITS_PER_UNIT * 3);
     }
 
     mod game_of_life {
