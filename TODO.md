@@ -1,12 +1,10 @@
 Genetic Algorithm
 -----------------
 
-Problem specific:
 
 Cellular Automata
 -----------------
 
-- Check if int-representation impacts run speed
 
 Web front-end
 -------------
