@@ -8,6 +8,7 @@ import Navbar from 'react-bootstrap/Navbar';
 
 import { CaSettingsContext, caSettingsReducer, initialCaSettings } from './components/CaControl';
 import { EaControlContext, eaControlReducer, initialEaControlState } from './components/EaControl';
+import { EaSettingsContext, initialEaSettings, eaSettingsReducer } from './components/EaSettings';
 import { Ca } from './pages/Ca'
 import { Ea } from './pages/Ea'
 import { Help } from './pages/Help'
@@ -15,6 +16,7 @@ import { Help } from './pages/Help'
 function App() {
     const [caSettings, caSettingsDispatch] = useReducer(caSettingsReducer, initialCaSettings);
     const [eaControl, eaControlDispatch] = useReducer(eaControlReducer, initialEaControlState);
+    const [eaSettings, eaSettingsDispatch] = useReducer(eaSettingsReducer, initialEaSettings);
 
     return (
         <div className="App">
@@ -29,25 +31,27 @@ function App() {
                 </Container>
             </Navbar>
             <EaControlContext.Provider value={{ eaControl, eaControlDispatch }}>
-                <CaSettingsContext.Provider value={{ caSettings, caSettingsDispatch }}>
-                    <HashRouter basename="/">
-                        <Switch>
-                            <Route exact path="/">
-                                <Ea/>
-                            </Route>
-                            <Route exact path="/ca">
-                                <Ca seed={eaControl?.eaState?.bestPhenotype} />
-                            </Route>
-                            <Route exact path="/help">
-                                <Help />
-                            </Route>
-                            <Route path="*">
-                                <p>Page not found</p>
-                                <Link to="/">Go back</Link>
-                            </Route>
-                        </Switch>
-                    </HashRouter>
-                </CaSettingsContext.Provider>
+                <EaSettingsContext.Provider value={{ eaSettings, eaSettingsDispatch }}>
+                    <CaSettingsContext.Provider value={{ caSettings, caSettingsDispatch }}>
+                        <HashRouter basename="/">
+                            <Switch>
+                                <Route exact path="/">
+                                    <Ea/>
+                                </Route>
+                                <Route exact path="/ca">
+                                    <Ca seed={eaControl?.eaState?.bestPhenotype} />
+                                </Route>
+                                <Route exact path="/help">
+                                    <Help />
+                                </Route>
+                                <Route path="*">
+                                    <p>Page not found</p>
+                                    <Link to="/">Go back</Link>
+                                </Route>
+                            </Switch>
+                        </HashRouter>
+                    </CaSettingsContext.Provider>
+                </EaSettingsContext.Provider>
             </EaControlContext.Provider>
         </div>
     );
