@@ -740,38 +740,38 @@ mod tests {
 
         #[test]
         fn evolve_toad_across_boundary() {
-            let mut gol = GameOfLife::new(50, 6, true);
+            let mut gol = GameOfLife::new(BITS_PER_UNIT * 2, 6, true);
             let bc = BitCounter::new();
 
             // Toad pattern:
             //    * * *
             //  * * *
-            gol.set(30, 2);
-            gol.set(31, 2);
-            gol.set(32, 2);
-            gol.set(29, 3);
-            gol.set(30, 3);
-            gol.set(31, 3);
+            gol.set(BITS_PER_UNIT - 2, 2);
+            gol.set(BITS_PER_UNIT - 1, 2);
+            gol.set(BITS_PER_UNIT, 2);
+            gol.set(BITS_PER_UNIT - 3, 3);
+            gol.set(BITS_PER_UNIT - 2, 3);
+            gol.set(BITS_PER_UNIT - 1, 3);
 
             gol.step();
             gol.step();
 
             // Toad should have osillated back to starting position
             assert_eq!(bc.count_live_cells(&gol), 6);
-            assert!(gol.get(30, 2));
-            assert!(gol.get(31, 2));
-            assert!(gol.get(32, 2));
-            assert!(gol.get(29, 3));
-            assert!(gol.get(30, 3));
-            assert!(gol.get(31, 3));
+            assert!(gol.get(BITS_PER_UNIT - 2, 2));
+            assert!(gol.get(BITS_PER_UNIT - 1, 2));
+            assert!(gol.get(BITS_PER_UNIT, 2));
+            assert!(gol.get(BITS_PER_UNIT - 3, 3));
+            assert!(gol.get(BITS_PER_UNIT - 2, 3));
+            assert!(gol.get(BITS_PER_UNIT - 1, 3));
         }
 
         #[test]
         fn evolve_glider_across_boundary() {
-            let mut gol = GameOfLife::new(50, 6, true);
+            let mut gol = GameOfLife::new(BITS_PER_UNIT * 2, 6, true);
             let bc = BitCounter::new();
 
-            add_glider(&mut gol, 27, 0);
+            add_glider(&mut gol, BITS_PER_UNIT - 5, 0);
 
             for _ in 0..12 {
                 gol.step();
@@ -779,11 +779,11 @@ mod tests {
 
             // Glider should have moved across the boundary
             assert_eq!(bc.count_live_cells(&gol), 5);
-            assert!(gol.get(31, 3));
-            assert!(gol.get(32, 4));
-            assert!(gol.get(30, 5));
-            assert!(gol.get(31, 5));
-            assert!(gol.get(32, 5));
+            assert!(gol.get(BITS_PER_UNIT - 1, 3));
+            assert!(gol.get(BITS_PER_UNIT, 4));
+            assert!(gol.get(BITS_PER_UNIT - 2, 5));
+            assert!(gol.get(BITS_PER_UNIT - 1, 5));
+            assert!(gol.get(BITS_PER_UNIT, 5));
         }
 
         #[test]
