@@ -3,6 +3,7 @@ use std::hash::{Hash};
 use core::cmp::max;
 use wasm_bindgen::prelude::*;
 
+type UnitType = u32;
 const BITS_PER_UNIT: usize = 32;
 
 #[wasm_bindgen]
@@ -11,7 +12,7 @@ pub struct BitGrid {
     width: usize,
     height: usize,
     units_per_row: usize,
-    units: Vec<u32>
+    units: Vec<UnitType>
 }
 
 pub struct BitCounter {
@@ -34,7 +35,7 @@ pub struct GameOfLife {
     border: GridBorder,
     units_per_row: usize,
     num_steps: u32,
-    rows: [Vec<u32>; 3],
+    rows: [Vec<UnitType>; 3],
 }
 
 #[wasm_bindgen]
@@ -95,7 +96,7 @@ impl BitGrid {
         (x / BITS_PER_UNIT) + self.units_per_row * y
     }
 
-    pub fn width(&self) -> usize { 
+    pub fn width(&self) -> usize {
         self.width
     }
     pub fn height(&self) -> usize {
@@ -110,14 +111,14 @@ impl BitGrid {
     pub fn clear(&mut self, x: usize, y: usize) {
         let index = self.unit_index(x, y);
         let bitpos = x % BITS_PER_UNIT;
- 
+
         self.units[index] = self.units[index] & !(1 << bitpos);
     }
 
     pub fn set(&mut self, x: usize, y: usize) {
         let index = self.unit_index(x, y);
         let bitpos = x % BITS_PER_UNIT;
- 
+
         self.units[index] = self.units[index] | (1 << bitpos);
     }
 
@@ -200,7 +201,7 @@ impl BitCounter {
         for unit in bit_grid.units[
             gol.units_per_row..gol.units_per_row * (gol.height + 1)
         ].iter() {
-            let mut mask: u32 = !(1 << BITS_PER_UNIT_GOL);
+            let mut mask: UnitType = !(1 << BITS_PER_UNIT_GOL);
             if i == 0 {
                 mask &= !1;
             }
@@ -343,8 +344,8 @@ impl GameOfLife {
 
             // Copy wrapped bit
             units[unit_index_l] |= (units[unit_index_r] & (0x1 << bit_pos_r_src)) >> (bit_pos_r_src - bit_pos_l_dst);
-            units[unit_index_r] |= (units[unit_index_l] & (0x1 << bit_pos_l_src)) << (bit_pos_r_dst - bit_pos_l_src); 
-            
+            units[unit_index_r] |= (units[unit_index_l] & (0x1 << bit_pos_l_src)) << (bit_pos_r_dst - bit_pos_l_src);
+
             unit_index_l += self.units_per_row;
             unit_index_r += self.units_per_row;
         }
@@ -590,7 +591,7 @@ mod tests {
         fn count_cells_all_ones() {
             let w = 58;
             let h = 3;
-            let mut gol = GameOfLife::new(w, h);
+            let mut gol = GameOfLife::new(w, h, true);
             let bc = BitCounter::new();
 
             gol.bit_grid.toggle_all();
@@ -600,7 +601,7 @@ mod tests {
 
         #[test]
         fn grid_init() {
-            let mut gol = GameOfLife::new(5, 5);
+            let mut gol = GameOfLife::new(5, 5, true);
             let bc = BitCounter::new();
 
             gol.set(1, 2);
@@ -622,7 +623,7 @@ mod tests {
         fn zeroes_border() {
             let w = 7;
             let h = 3;
-            let mut gol = GameOfLife::new_result(w, h, GridBorder::Zeroes).unwrap();
+            let mut gol = GameOfLife::new(w, h, false);
             let bc = BitCounter::new();
 
             gol.bit_grid.toggle_all();
@@ -641,7 +642,7 @@ mod tests {
         fn wrapped_border() {
             let w = 7;
             let h = 7;
-            let mut gol = GameOfLife::new(w, h);
+            let mut gol = GameOfLife::new(w, h, true);
 
             gol.set(0, 0); // Corner
             gol.set(3, 0); // Top row
@@ -667,7 +668,7 @@ mod tests {
 
         #[test]
         fn evolve_block() {
-            let mut gol = GameOfLife::new(4, 4);
+            let mut gol = GameOfLife::new(4, 4, true);
             let bc = BitCounter::new();
 
             // Pattern:
@@ -679,7 +680,7 @@ mod tests {
             gol.set(2, 2);
 
             gol.step();
-            
+
             // Pattern should remain unchanged.
             assert_eq!(bc.count_live_cells(&gol), 4);
             assert!(gol.get(1, 1));
@@ -690,7 +691,7 @@ mod tests {
 
         #[test]
         fn evolve_small_oscillator() {
-            let mut gol = GameOfLife::new(5, 5);
+            let mut gol = GameOfLife::new(5, 5, true);
             let bc = BitCounter::new();
 
             // Blinker pattern:
@@ -710,7 +711,7 @@ mod tests {
 
         #[test]
         fn evolve_glider() {
-            let mut gol = GameOfLife::new(5, 5);
+            let mut gol = GameOfLife::new(5, 5, true);
             let bc = BitCounter::new();
 
             add_glider(&mut gol, 1, 1);
@@ -719,7 +720,7 @@ mod tests {
             gol.step();
             gol.step();
             gol.step();
-            
+
             // Glider should have moved right and down one unit
             assert_eq!(bc.count_live_cells(&gol), 5);
             assert!(gol.get(3, 2));
@@ -731,7 +732,7 @@ mod tests {
 
         #[test]
         fn evolve_toad_across_boundary() {
-            let mut gol = GameOfLife::new(50, 6);
+            let mut gol = GameOfLife::new(50, 6, true);
             let bc = BitCounter::new();
 
             // Toad pattern:
@@ -746,7 +747,7 @@ mod tests {
 
             gol.step();
             gol.step();
-            
+
             // Toad should have osillated back to starting position
             assert_eq!(bc.count_live_cells(&gol), 6);
             assert!(gol.get(30, 2));
@@ -759,7 +760,7 @@ mod tests {
 
         #[test]
         fn evolve_glider_across_boundary() {
-            let mut gol = GameOfLife::new(50, 6);
+            let mut gol = GameOfLife::new(50, 6, true);
             let bc = BitCounter::new();
 
             add_glider(&mut gol, 27, 0);
@@ -767,7 +768,7 @@ mod tests {
             for _ in 0..12 {
                 gol.step();
             }
-            
+
             // Glider should have moved across the boundary
             assert_eq!(bc.count_live_cells(&gol), 5);
             assert!(gol.get(31, 3));
@@ -779,7 +780,7 @@ mod tests {
 
         #[test]
         fn evolve_glider_across_wrapped_border() {
-            let mut gol = GameOfLife::new(5, 5);
+            let mut gol = GameOfLife::new(5, 5, true);
             let bc = BitCounter::new();
 
             add_glider(&mut gol, 1, 1);
@@ -787,7 +788,7 @@ mod tests {
             for _ in 0..20 {
                 gol.step();
             }
-            
+
             // Glider should have moved back to its starting position
             assert_eq!(bc.count_live_cells(&gol), 5);
             assert!(gol.get(2, 1));
@@ -799,7 +800,7 @@ mod tests {
 
         #[test]
         fn glider_termination() {
-            let mut gol = GameOfLife::new(5, 5);
+            let mut gol = GameOfLife::new(5, 5, true);
             let runner = GameOfLifeRunner::new(20, 2.0);
 
             add_glider(&mut gol, 1, 1);
@@ -812,7 +813,7 @@ mod tests {
 
         #[test]
         fn penta_decathlon_termination() {
-            let mut gol = GameOfLife::new(20, 15);
+            let mut gol = GameOfLife::new(20, 15, true);
             let runner = GameOfLifeRunner::new(20, 2.0);
 
             for i in 5..15 {
@@ -833,7 +834,7 @@ mod tests {
         #[test]
         fn glider_toggled_count() {
             let size = 12;
-            let mut gol = GameOfLife::new(size, size);
+            let mut gol = GameOfLife::new(size, size, true);
             let runner = GameOfLifeRunner::new(20, 2.0);
 
             add_glider(&mut gol, 1, 1);

@@ -1,7 +1,8 @@
-use ga_of_life::{MyEvolutionaryAlgorithm};
+use ga_of_life::{MyEvolutionaryAlgorithm, MyEaSettings};
 
 fn main() {
-    let mut ga = MyEvolutionaryAlgorithm::new();
+    let ga_settings = MyEaSettings::new();
+    let mut ga = MyEvolutionaryAlgorithm::new(&ga_settings);
     let mut max_fitness = 0.0;
 
     for _ in 0..100 {
