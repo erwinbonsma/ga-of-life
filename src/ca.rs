@@ -200,26 +200,35 @@ impl BitCounter {
         assert_eq!(gol.bit_grid.width, bit_grid.width);
         assert_eq!(gol.bit_grid.height, bit_grid.height);
 
+        let mask_c: UnitType = !(1 << BITS_PER_UNIT_GOL);
+        let mask_l = mask_c & !1;
+        let mut mask_r = if gol.units_per_row == 1 {
+            mask_l
+        } else {
+            mask_c
+        };
+
         // The number of bits in the rightmost unit of each row that are used by the CA.
         let bits_in_last_unit = gol.width % BITS_PER_UNIT_GOL + 1;
+        if bits_in_last_unit < BITS_PER_UNIT {
+            mask_r &= !0 >> (BITS_PER_UNIT - bits_in_last_unit);
+        }
 
         let mut count: usize = 0;
         let mut i = 0;
         for unit in bit_grid.units[
             gol.units_per_row..gol.units_per_row * (gol.height + 1)
         ].iter() {
-            let mut mask: UnitType = !(1 << BITS_PER_UNIT_GOL);
-            if i == 0 {
-                mask &= !1;
-            }
-            if i == gol.units_per_row - 1 {
-                if bits_in_last_unit < BITS_PER_UNIT {
-                    mask &= !0 >> (BITS_PER_UNIT - bits_in_last_unit);
-                }
+            let mask = if i == gol.units_per_row - 1 {
                 i = 0;
+                mask_r
+            } else if i == 0 {
+                i = 1;
+                mask_l
             } else {
                 i += 1;
-            }
+                mask_c
+            };
 
             let val = *unit & mask;
             count += self.lookup[(val & 255) as usize] as usize;
@@ -604,6 +613,26 @@ mod tests {
             gol.set(2 + x, 2 + y);
         }
 
+        fn add_leftwards_glider(gol: &mut GameOfLife, x: usize, y: usize) {
+            // Glider pattern:
+            //    *
+            //  *
+            //  * * *
+            gol.set(1 + x, 0 + y);
+            gol.set(0 + x, 1 + y);
+            gol.set(0 + x, 2 + y);
+            gol.set(1 + x, 2 + y);
+            gol.set(2 + x, 2 + y);
+        }
+
+        fn add_blinker(gol: &mut GameOfLife, x: usize, y: usize) {
+            // Blinker pattern:
+            //   * * *
+            gol.set(0 + x, y);
+            gol.set(1 + x, y);
+            gol.set(2 + x, y);
+        }
+
         #[test]
         fn count_cells_all_ones() {
             let w = 58;
@@ -711,11 +740,7 @@ mod tests {
             let mut gol = GameOfLife::new(5, 5, true);
             let bc = BitCounter::new();
 
-            // Blinker pattern:
-            //   * * *
-            gol.set(1, 2);
-            gol.set(2, 2);
-            gol.set(3, 2);
+            add_blinker(&mut gol, 1, 2);
 
             gol.step();
 
@@ -784,15 +809,61 @@ mod tests {
 
             for _ in 0..12 {
                 gol.step();
+                assert_eq!(bc.count_live_cells(&gol), 5);
             }
 
             // Glider should have moved across the boundary
-            assert_eq!(bc.count_live_cells(&gol), 5);
             assert!(gol.get(BITS_PER_UNIT - 1, 3));
             assert!(gol.get(BITS_PER_UNIT, 4));
             assert!(gol.get(BITS_PER_UNIT - 2, 5));
             assert!(gol.get(BITS_PER_UNIT - 1, 5));
             assert!(gol.get(BITS_PER_UNIT, 5));
+        }
+
+        #[test]
+        fn evolve_leftwards_glider_across_boundary() {
+            let mut gol = GameOfLife::new(BITS_PER_UNIT * 2, 6, true);
+            let bc = BitCounter::new();
+
+            add_leftwards_glider(&mut gol, BITS_PER_UNIT, 0);
+
+            for _ in 0..12 {
+                gol.step();
+                assert_eq!(bc.count_live_cells(&gol), 5);
+            }
+
+            // Glider should have moved across the boundary
+            assert!(gol.get(BITS_PER_UNIT - 2, 3));
+            assert!(gol.get(BITS_PER_UNIT - 3, 4));
+            assert!(gol.get(BITS_PER_UNIT - 3, 5));
+            assert!(gol.get(BITS_PER_UNIT - 2, 5));
+            assert!(gol.get(BITS_PER_UNIT - 1, 5));
+        }
+
+        fn count_across_boundary(offset: usize) {
+            let mut gol = GameOfLife::new(BITS_PER_UNIT + 10, 5, true);
+            let bc = BitCounter::new();
+
+            add_blinker(&mut gol, BITS_PER_UNIT - offset, 1);
+
+            gol.step();
+
+            assert_eq!(bc.count_live_cells(&gol), 3);
+        }
+
+        #[test]
+        fn count_across_boundary_offset4() {
+            count_across_boundary(4);
+        }
+
+        #[test]
+        fn count_across_boundary_offset3() {
+            count_across_boundary(3);
+        }
+
+        #[test]
+        fn count_across_boundary_offset2() {
+            count_across_boundary(2);
         }
 
         #[test]
@@ -804,10 +875,10 @@ mod tests {
 
             for _ in 0..20 {
                 gol.step();
+                assert_eq!(bc.count_live_cells(&gol), 5);
             }
 
             // Glider should have moved back to its starting position
-            assert_eq!(bc.count_live_cells(&gol), 5);
             assert!(gol.get(2, 1));
             assert!(gol.get(3, 2));
             assert!(gol.get(1, 3));
@@ -824,8 +895,6 @@ mod tests {
             for _ in 0..30 {
                 gol.step();
             }
-
-            println!("{}", gol.bit_grid);
 
             // The glider should become a block when reaching the zeroes border
             assert_eq!(bc.count_live_cells(&gol), 4);
