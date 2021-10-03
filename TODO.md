@@ -5,12 +5,11 @@ Genetic Algorithm
 Cellular Automata
 -----------------
 
+- Remove limit on CA grid size when border wraps
 
 Web front-end
 -------------
 
-- Look & Feel
-    - Improve theming
 - Add EA analysis
     - History of best individual
 
