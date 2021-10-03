@@ -235,8 +235,8 @@ export function CaControl({ seed }) {
         <Row>
             <Col>
                 <canvas ref={canvasRef}
-                    width={(cellSize + 1) * caSettings.gridSize}
-                    height={(cellSize + 1) * caSettings.gridSize}></canvas>
+                    width={(cellSize + 1) * caSettings.gridSize + 1}
+                    height={(cellSize + 1) * caSettings.gridSize + 1}></canvas>
             </Col>
         </Row>
     </Container>);
