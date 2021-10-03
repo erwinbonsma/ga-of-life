@@ -200,6 +200,9 @@ impl BitCounter {
         assert_eq!(gol.bit_grid.width, bit_grid.width);
         assert_eq!(gol.bit_grid.height, bit_grid.height);
 
+        // The number of bits in the rightmost unit of each row that are used by the CA.
+        let bits_in_last_unit = gol.width % BITS_PER_UNIT_GOL + 1;
+
         let mut count: usize = 0;
         let mut i = 0;
         for unit in bit_grid.units[
@@ -210,7 +213,9 @@ impl BitCounter {
                 mask &= !1;
             }
             if i == gol.units_per_row - 1 {
-                mask &= !0 >> (BITS_PER_UNIT - ((gol.width + 1) % BITS_PER_UNIT_GOL));
+                if bits_in_last_unit < BITS_PER_UNIT {
+                    mask &= !0 >> (BITS_PER_UNIT - bits_in_last_unit);
+                }
                 i = 0;
             } else {
                 i += 1;
@@ -372,11 +377,15 @@ impl GameOfLife {
         }
     }
 
+    // Restore the rightmost bits of each unit. These will be incorrect after each update step, as
+    // the update does not consider the neighbouring cell at their right (in the next unit).
     fn restore_right_bits(&mut self) {
         let units = &mut self.bit_grid.units;
 
         for unit_index in self.units_per_row..self.units_per_row * (self.height + 1) {
+            // Clear incorrect value
             units[unit_index] &= !(0x1 << BITS_PER_UNIT_GOL);
+            // Copy correct value from the next grid unit
             units[unit_index] |= (units[unit_index + 1] & 0x1) << BITS_PER_UNIT_GOL;
         }
     }
@@ -388,8 +397,8 @@ impl GameOfLife {
 
         self.num_steps += 1;
 
-        self.restore_right_bits();
         self.set_border_bits();
+        self.restore_right_bits();
 
         // Init row above to Row #0 of grid
         self.rows[row_above][0..self.units_per_row].copy_from_slice(
@@ -407,7 +416,7 @@ impl GameOfLife {
                 &self.bit_grid.units[self.units_per_row * (row + 1)..self.units_per_row * (row + 2)]
             );
 
-            // State needed for neighbours at the left (for rightmost cells in current unit column)
+            // State needed for neighbours at the left (for leftmost cells in current unit column)
             let mut abc_sum_prev = 0;
             let mut abc_car_prev = 0;
 
@@ -804,6 +813,42 @@ mod tests {
             assert!(gol.get(1, 3));
             assert!(gol.get(2, 3));
             assert!(gol.get(3, 3));
+        }
+
+        fn evolve_glider_against_zeroes_border(w: usize) {
+            let mut gol = GameOfLife::new(w, 8, false);
+            let bc = BitCounter::new();
+
+            add_glider(&mut gol, w - 5, 1);
+
+            for _ in 0..30 {
+                gol.step();
+            }
+
+            println!("{}", gol.bit_grid);
+
+            // The glider should become a block when reaching the zeroes border
+            assert_eq!(bc.count_live_cells(&gol), 4);
+
+            assert!(gol.get(w - 2, 5));
+            assert!(gol.get(w - 1, 5));
+            assert!(gol.get(w - 2, 6));
+            assert!(gol.get(w - 1, 6));
+        }
+
+        #[test]
+        fn evolve_glider_against_zeroes_border_w62() {
+            evolve_glider_against_zeroes_border(62);
+        }
+
+        #[test]
+        fn evolve_glider_against_zeroes_border_w63() {
+            evolve_glider_against_zeroes_border(63);
+        }
+
+        #[test]
+        fn evolve_glider_against_zeroes_border_w64() {
+            evolve_glider_against_zeroes_border(64);
         }
 
         #[test]
