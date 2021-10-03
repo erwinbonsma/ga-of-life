@@ -32,6 +32,8 @@ h3 {
 
 .Label {
 	text-align: left;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }
 
 .NumValue {

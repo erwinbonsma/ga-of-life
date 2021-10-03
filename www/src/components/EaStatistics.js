@@ -42,7 +42,11 @@ export function EaStatistics() {
             <Col className="NumValue" xs={4}>{Math.round(runTimeInSeconds)}</Col>
         </Row>
         <Row>
-            <Col className="Label" xs={8}>CA steps [s<sup>-1</sup>]</Col>
+            <Col className="Label" xs={8}>EA speed [evals/s]</Col>
+            <Col className="NumValue" xs={4}>{runTimeInSeconds > 0 ? Math.round(eaState.evaluations / runTimeInSeconds) : "-"}</Col>
+        </Row>
+        <Row>
+            <Col className="Label" xs={8}>CA speed [steps/s]</Col>
             <Col className="NumValue" xs={4}>{runTimeInSeconds > 0 ? Math.round(eaState.caSteps / runTimeInSeconds) : "-"}</Col>
         </Row>
     </Container>);
