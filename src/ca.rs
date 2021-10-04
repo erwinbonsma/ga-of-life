@@ -354,44 +354,21 @@ impl GameOfLife {
         let mut unit_index_r = self.units_per_row * 2 - 1;
         let bit_pos_l_dst = 0;
         let bit_pos_l_src = 1;
-        let bit_pos_r_dst_ini = (self.width + 1) % BITS_PER_UNIT_GOL;
+        let bit_pos_r_dst = self.width % BITS_PER_UNIT_GOL + 1;
+        let bit_pos_r_src = bit_pos_r_dst - 1;
 
         // Wrap left/right boundary columns
-        if bit_pos_r_dst_ini > 0 {
-            // Usual case where the last unit has some unused bits
-            let bit_pos_r_dst = bit_pos_r_dst_ini;
-            let bit_pos_r_src = bit_pos_r_dst - 1;
+        for _ in 1..self.bit_grid.height - 1 {
+            // Clear existing bit first
+            units[unit_index_l] &= !(0x1 << bit_pos_l_dst);
+            units[unit_index_r] &= !(0x1 << bit_pos_r_dst);
 
-            for _ in 1..self.bit_grid.height - 1 {
-                // Clear existing bit first
-                units[unit_index_l] &= !(0x1 << bit_pos_l_dst);
-                units[unit_index_r] &= !(0x1 << bit_pos_r_dst);
+            // Copy wrapped bit
+            units[unit_index_l] |= (units[unit_index_r] & (0x1 << bit_pos_r_src)) >> (bit_pos_r_src - bit_pos_l_dst);
+            units[unit_index_r] |= (units[unit_index_l] & (0x1 << bit_pos_l_src)) << (bit_pos_r_dst - bit_pos_l_src);
 
-                // Copy wrapped bit
-                units[unit_index_l] |= (units[unit_index_r] & (0x1 << bit_pos_r_src)) >> (bit_pos_r_src - bit_pos_l_dst);
-                units[unit_index_r] |= (units[unit_index_l] & (0x1 << bit_pos_l_src)) << (bit_pos_r_dst - bit_pos_l_src);
-
-                unit_index_l += self.units_per_row;
-                unit_index_r += self.units_per_row;
-            }
-        } else {
-            // Exceptional case where the right-most bit is the most significant bit of the last unit (but not copied
-            // copied across the unit boundary)
-            let bit_pos_r_dst = BITS_PER_UNIT_GOL;
-            let bit_pos_r_src = BITS_PER_UNIT_GOL - 1;
-
-            for _ in 1..self.bit_grid.height - 1 {
-                // Clear existing bit first
-                units[unit_index_l] &= !(0x1 << bit_pos_l_dst);
-                units[unit_index_r] &= !(0x1 << bit_pos_r_dst);
-
-                // Copy wrapped bit
-                units[unit_index_l] |= (units[unit_index_r] & (0x1 << bit_pos_r_src)) >> (bit_pos_r_src - bit_pos_l_dst);
-                units[unit_index_r] |= (units[unit_index_l] & (0x1 << bit_pos_l_src)) << (bit_pos_r_dst - bit_pos_l_src);
-
-                unit_index_l += self.units_per_row;
-                unit_index_r += self.units_per_row;
-            }
+            unit_index_l += self.units_per_row;
+            unit_index_r += self.units_per_row;
         }
 
         // Wrap top/bottom boundary rows
