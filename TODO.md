@@ -5,8 +5,6 @@ Genetic Algorithm
 Cellular Automata
 -----------------
 
-- Remove limit on CA grid size when border wraps
-
 Web front-end
 -------------
 
