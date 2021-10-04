@@ -184,7 +184,7 @@ impl Expressor<BinaryChromosome, MyPhenotype> for MyNeutralExpressor {
         }
         // Optionally swap neighbours. This is done so that a mutation of a single "swap" bit can trigger an arbitrary
         // change to the phenotype. If two neighbouring groups have a different value, a swap means that one group of
-        // alive cells is switched off and another set of dead cells (not necessarily of the same size) is turned on. 
+        // alive cells is switched off and another set of dead cells (not necessarily of the same size) is turned on.
         for i in 0..ng {
             if genotype.bits[ng + i] {
                 // Swap with next
@@ -560,7 +560,7 @@ impl MyEvolutionaryAlgorithm {
                 return format!("{}", phenotype.bit_grid)
                     .chars()
                     .filter(|ch| *ch != '\n')
-                    .map(|ch| if ch == ' ' { '0' } else { '1' })
+                    .map(|ch| if ch == '◼' { '1' } else { '0' })
                     .collect::<String>()
             }
         }
