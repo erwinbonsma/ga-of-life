@@ -143,7 +143,11 @@ impl fmt::Display for BitGrid {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for y in 0..self.height {
             for x in 0..self.width {
-                let symbol = if self.get(x, y) { '◼' } else { ' ' };
+                let symbol = if self.get(x, y) {
+                    '◼'
+                } else {
+                    if (x % BITS_PER_UNIT) == BITS_PER_UNIT - 1 { '+' } else { '-' }
+                };
                 write!(f, "{}", symbol)?;
             }
             write!(f, "\n")?;
@@ -260,14 +264,10 @@ impl GameOfLife {
     //    avoids the need to look the next unit column when updating cells _during_ the update
     //    loop.
     pub fn new_result(width: usize, height: usize, border: GridBorder) -> Result<Self, String> {
-        let units_per_row = (width + 2 + (BITS_PER_UNIT_GOL - 1)) / BITS_PER_UNIT_GOL;
+        let units_per_row = (width + 1 + (BITS_PER_UNIT_GOL - 1)) / BITS_PER_UNIT_GOL;
 
         if width < 3 || height < 3 {
             return Err("Size too small".to_string());
-        }
-
-        if border == GridBorder::Wrapped && width % 31 == 0 {
-            return Err("Width cannot be a multiple of 31 when border is wrapped".to_string());
         }
 
         Ok(GameOfLife {
@@ -354,22 +354,44 @@ impl GameOfLife {
         let mut unit_index_r = self.units_per_row * 2 - 1;
         let bit_pos_l_dst = 0;
         let bit_pos_l_src = 1;
-        let bit_pos_r_dst = (self.width + 1) % BITS_PER_UNIT_GOL;
-        let bit_pos_r_src = bit_pos_r_dst - 1;
-        assert_ne!(bit_pos_r_dst, 0);
+        let bit_pos_r_dst_ini = (self.width + 1) % BITS_PER_UNIT_GOL;
 
         // Wrap left/right boundary columns
-        for _ in 1..self.bit_grid.height - 1 {
-            // Clear existing bit first
-            units[unit_index_l] &= !(0x1 << bit_pos_l_dst);
-            units[unit_index_r] &= !(0x1 << bit_pos_r_dst);
+        if bit_pos_r_dst_ini > 0 {
+            // Usual case where the last unit has some unused bits
+            let bit_pos_r_dst = bit_pos_r_dst_ini;
+            let bit_pos_r_src = bit_pos_r_dst - 1;
 
-            // Copy wrapped bit
-            units[unit_index_l] |= (units[unit_index_r] & (0x1 << bit_pos_r_src)) >> (bit_pos_r_src - bit_pos_l_dst);
-            units[unit_index_r] |= (units[unit_index_l] & (0x1 << bit_pos_l_src)) << (bit_pos_r_dst - bit_pos_l_src);
+            for _ in 1..self.bit_grid.height - 1 {
+                // Clear existing bit first
+                units[unit_index_l] &= !(0x1 << bit_pos_l_dst);
+                units[unit_index_r] &= !(0x1 << bit_pos_r_dst);
 
-            unit_index_l += self.units_per_row;
-            unit_index_r += self.units_per_row;
+                // Copy wrapped bit
+                units[unit_index_l] |= (units[unit_index_r] & (0x1 << bit_pos_r_src)) >> (bit_pos_r_src - bit_pos_l_dst);
+                units[unit_index_r] |= (units[unit_index_l] & (0x1 << bit_pos_l_src)) << (bit_pos_r_dst - bit_pos_l_src);
+
+                unit_index_l += self.units_per_row;
+                unit_index_r += self.units_per_row;
+            }
+        } else {
+            // Exceptional case where the right-most bit is the most significant bit of the last unit (but not copied
+            // copied across the unit boundary)
+            let bit_pos_r_dst = BITS_PER_UNIT_GOL;
+            let bit_pos_r_src = BITS_PER_UNIT_GOL - 1;
+
+            for _ in 1..self.bit_grid.height - 1 {
+                // Clear existing bit first
+                units[unit_index_l] &= !(0x1 << bit_pos_l_dst);
+                units[unit_index_r] &= !(0x1 << bit_pos_r_dst);
+
+                // Copy wrapped bit
+                units[unit_index_l] |= (units[unit_index_r] & (0x1 << bit_pos_r_src)) >> (bit_pos_r_src - bit_pos_l_dst);
+                units[unit_index_r] |= (units[unit_index_l] & (0x1 << bit_pos_l_src)) << (bit_pos_r_dst - bit_pos_l_src);
+
+                unit_index_l += self.units_per_row;
+                unit_index_r += self.units_per_row;
+            }
         }
 
         // Wrap top/bottom boundary rows
@@ -406,8 +428,8 @@ impl GameOfLife {
 
         self.num_steps += 1;
 
-        self.set_border_bits();
         self.restore_right_bits();
+        self.set_border_bits();
 
         // Init row above to Row #0 of grid
         self.rows[row_above][0..self.units_per_row].copy_from_slice(
@@ -659,13 +681,6 @@ mod tests {
         }
 
         #[test]
-        fn grid_init_fails() {
-            let gol_result = GameOfLife::new_result(62, 3, GridBorder::Wrapped);
-
-            assert!(gol_result.is_err());
-        }
-
-        #[test]
         fn zeroes_border() {
             let w = 7;
             let h = 3;
@@ -866,24 +881,52 @@ mod tests {
             count_across_boundary(2);
         }
 
-        #[test]
-        fn evolve_glider_across_wrapped_border() {
-            let mut gol = GameOfLife::new(5, 5, true);
+        fn evolve_glider_across_wrapped_border(grid_size: usize) {
+            let mut gol = GameOfLife::new(grid_size, grid_size, true);
             let bc = BitCounter::new();
 
-            add_glider(&mut gol, 1, 1);
+            let x = 0;
+            add_glider(&mut gol, x, 0);
 
-            for _ in 0..20 {
+            let num_steps = grid_size * 4;
+            for _ in 0..num_steps {
                 gol.step();
                 assert_eq!(bc.count_live_cells(&gol), 5);
             }
 
             // Glider should have moved back to its starting position
-            assert!(gol.get(2, 1));
-            assert!(gol.get(3, 2));
-            assert!(gol.get(1, 3));
-            assert!(gol.get(2, 3));
-            assert!(gol.get(3, 3));
+            assert!(gol.get(x + 1, 0));
+            assert!(gol.get(x + 2, 1));
+            assert!(gol.get(x + 0, 2));
+            assert!(gol.get(x + 1, 2));
+            assert!(gol.get(x + 2, 2));
+        }
+
+        #[test]
+        fn evolve_glider_across_wrapped_border_5x5() {
+            evolve_glider_across_wrapped_border(5);
+        }
+
+        #[test]
+        fn evolve_glider_across_wrapped_border_32x32() {
+            evolve_glider_across_wrapped_border(32);
+        }
+
+        #[test]
+        // Grid where a row of CA fits exactly in one grid unit
+        fn evolve_glider_across_wrapped_border_62x62() {
+            evolve_glider_across_wrapped_border(62);
+        }
+
+        #[test]
+        // Grid where row just required two grid units
+        fn evolve_glider_across_wrapped_border_63x63() {
+            evolve_glider_across_wrapped_border(63);
+        }
+
+        #[test]
+        fn evolve_glider_across_wrapped_border_64x64() {
+            evolve_glider_across_wrapped_border(64);
         }
 
         fn evolve_glider_against_zeroes_border(w: usize) {
