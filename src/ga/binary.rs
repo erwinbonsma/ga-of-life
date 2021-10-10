@@ -74,7 +74,7 @@ impl Mutation for BinaryBitMutation {
         // Instead of checking for each bit individually if it should be flipped, this function
         // calculates which bits should be flipped. It calculates which bit to mutate next as
         // follows:
-        // 
+        //
         //   offset = floor( ln(1 - rnd_val) / ln(1 - p) )
         //
         // Here "rnd_val" is a random value in the range of [0, 1] and "p" is the probability of
@@ -122,7 +122,7 @@ impl Recombination for BinaryNPointBitCrossover {
         let mut points: Vec<usize> = (0..self.n).map(
             |_| rand::thread_rng().gen_range(1..range)
         ).collect();
-        &points[..].sort_unstable();
+        points[..].sort_unstable();
 
         if self.n % 2 == 1 {
             // Ensure that number of points is even
