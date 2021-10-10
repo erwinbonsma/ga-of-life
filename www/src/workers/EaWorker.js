@@ -23,6 +23,12 @@ function settings_to_wasm(settings) {
     return ea_settings;
 }
 
+function floatArrayStruct(buffer, byteOffset, length) {
+    return {
+        buffer, byteOffset, length
+    }
+}
+
 export async function init(settings) {
     if (!wasm) {
         wasm = await import('ga-of-life');
@@ -53,7 +59,7 @@ export function step() {
         avgFitness: ea.avg_fitness(),
         bestGenotype: ea.best_genotype(),
         bestPhenotype: ea.best_phenotype(),
-        geneDistribution: new Float32Array(wasm_bg.memory.buffer, ea.gene_distribution(), ea.genotype_len()),
-        cellDistribution: new Float32Array(wasm_bg.memory.buffer, ea.cell_distribution(), ea.phenotype_len()),
+        geneDistribution: floatArrayStruct(wasm_bg.memory.buffer, ea.gene_distribution(), ea.genotype_len()),
+        cellDistribution: floatArrayStruct(wasm_bg.memory.buffer, ea.cell_distribution(), ea.phenotype_len()),
     }
 }

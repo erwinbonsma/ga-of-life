@@ -49,6 +49,10 @@ export function eaControlReducer(state, action) {
     }
 }
 
+function convertToFloatArray(wrapper) {
+    return new Float32Array(wrapper.buffer, wrapper.byteOffset, wrapper.length);
+}
+
 export function EaControl() {
     const { eaControl, eaControlDispatch } = useContext(EaControlContext);
 
@@ -77,7 +81,11 @@ export function EaControl() {
                     eaControlDispatch({
                         type: 'executedStep',
                         executionTime: (endStep - startStep),
-                        eaState 
+                        eaState: {
+                            ...eaState,
+                            geneDistribution: convertToFloatArray(eaState.geneDistribution),
+                            cellDistribution: convertToFloatArray(eaState.cellDistribution),
+                        }
                     });
                 });
             }
