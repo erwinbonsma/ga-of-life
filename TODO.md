@@ -1,6 +1,7 @@
 Genetic Algorithm
 -----------------
 
+- Remove TODO's from code
 
 Cellular Automata
 -----------------
