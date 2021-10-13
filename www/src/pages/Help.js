@@ -6,7 +6,7 @@ export function Help() {
     return (<Container>
         <Row className="mt-3">
             <p>
-                This application lets you use a Genetic Algorithm to solve an optimization problems in Conway's Game of Life.
+                This application lets you use a Genetic Algorithm to solve optimization problems in Conway's Game of Life.
             </p>
         </Row>
         <Row as="h2">
@@ -15,7 +15,7 @@ export function Help() {
         <Row>
             <p>
                 <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</a> is a Cellular Automaton (CA) devised by John Conway.
-                It consists of a simple set of rules that specify how a set of cells in a two-dimensional grid behave.
+                It consists of three rules that specify how a set of cells in a two-dimensional grid behave.
                 Each cell can only have two states: dead or alive.
                 The state of a cell in the next generation of the CA depends on its current state, as well as those of its eight neighbours.
             </p>
