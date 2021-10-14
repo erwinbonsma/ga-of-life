@@ -5,7 +5,7 @@ Conway's Game of Life, a Cellular Automaton (CA).
 
 I developed it purely for my own enjoyment and learning.
 It's my first project where I used Rust.
-I wanted to see how it can be used to built performant web apps.
+I wanted to see how it can be used to build performant web apps.
 
 ![Evolving Life screenshot](images/EvolvingLife.png)
 
@@ -17,8 +17,7 @@ The cells in gray are currently not alive, but were alive at least once.
 ![The CA for a solution](images/CA-Animation.gif)
 
 You can experiment with the GA and see the resulting CA patterns [here](https://erwinbonsma.github.io/www/ga-of-life/).
-The [help page](https://erwinbonsma.github.io/www/ga-of-life/#/help) provides a bit more detail
-as well.
+The [help page](https://erwinbonsma.github.io/www/ga-of-life/#/help) provides a bit more detail.
 
 ## Technologies
 
