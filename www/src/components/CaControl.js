@@ -217,7 +217,7 @@ export function CaControl({ seed }) {
         }
     }, [
         seed, caControl?.ca, caControl?.seed, caControl?.caStats, caSettings, caControlDispatch,
-        seedCa, clearOnceAlive, drawGrid, drawCells
+        seedCa, clearOnceAlive, updateCaStats, drawGrid, drawCells
     ]);
 
     useEffect(() => {
