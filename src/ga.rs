@@ -11,7 +11,7 @@ pub trait Genotype : 'static + fmt::Debug + clone::Clone {
 }
 
 /// A phenotype represents a solution to the optimisation problem. How good the solution is is
-/// expressed by its fitness, which influences selection by the evolutionary algorithm. 
+/// expressed by its fitness, which influences selection by the evolutionary algorithm.
 ///
 /// A phenotype is an expression of a genotype. Multiple genotypes may result in the same
 /// phenotype. Examples:
@@ -40,7 +40,7 @@ pub trait Evaluator<P: Phenotype> : fmt::Debug {
 
 pub trait Mutation {
     type Genotype;
-    
+
     fn mutate(&self, target: &mut Self::Genotype);
 }
 
@@ -61,7 +61,7 @@ pub trait GenotypeManipulation<G: Genotype> {
     fn recombine(&self, parent1: &G, parent2: &G) -> G;
 }
 
-pub trait GenotypeConfig<G: Genotype>: 
+pub trait GenotypeConfig<G: Genotype>:
     GenotypeFactory<G> + GenotypeManipulation<G> + fmt::Debug {}
 
 #[derive(Debug)]
@@ -74,10 +74,19 @@ pub struct Individual<G: Genotype, P: Phenotype> {
     fitness: Option<f32>,
 }
 
+#[derive(Debug, PartialEq)]
+enum PopulationState {
+    Empty,
+    GenotypeCreated,
+    PhenotypeCreated,
+    FitnessEvaluated,
+}
+
 pub struct Population<G: Genotype, P: Phenotype> {
     individuals: Vec<Individual<G, P>>,
     fitness_cache: Option<HashMap<MyRef<P>, f32>>,
     generation: u32,
+    state: PopulationState,
 }
 
 pub trait Selection<G: Genotype, P: Phenotype> : fmt::Debug {
@@ -209,6 +218,7 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
             individuals: Vec::with_capacity(capacity),
             fitness_cache: None,
             generation: 1,
+            state: PopulationState::Empty,
         }
     }
 
@@ -219,9 +229,10 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
     pub fn get_individual(&self, index: usize) -> &Individual<G, P> {
         self.individuals.get(index).expect("Individual index out of range")
     }
- 
+
     pub fn add_individual(&mut self, individual: Individual<G, P>) {
         self.individuals.push(individual);
+        self.state = PopulationState::GenotypeCreated;
     }
 
     pub fn size(&self) -> usize {
@@ -233,7 +244,8 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
     }
 
     pub fn grow(&mut self, expressor: &mut(dyn Expressor<G, P>)) {
-        // TODO: Check start state is "new_generation"
+        assert_eq!(self.state, PopulationState::GenotypeCreated);
+
         for indiv in self.individuals.iter_mut() {
             if let None = indiv.phenotype {
                 (*indiv).phenotype = Some(
@@ -241,11 +253,13 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
                 );
             }
         }
-        // TODO: Update state to "grown"
+
+        self.state = PopulationState::PhenotypeCreated;
     }
 
     pub fn evaluate(&mut self, evaluator: &mut(dyn Evaluator<P>)) {
-        // TODO: Check start state is "grown"
+        assert_eq!(self.state, PopulationState::PhenotypeCreated);
+
         for indiv in self.individuals.iter_mut() {
             if let Some(phenotype) = &indiv.phenotype {
                 if let None = indiv.fitness {
@@ -261,16 +275,18 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
                 }
             }
         }
-        // TODO: Update state to "evaluated"
+
+        self.state = PopulationState::FitnessEvaluated;
     }
 
     pub fn new_generation(&mut self, new_indivs: Vec<Individual<G, P>>) {
-        // TODO: Check start state is "evaluated"
+        assert_eq!(self.state, PopulationState::FitnessEvaluated);
         assert_eq!(new_indivs.len(), self.size());
 
         self.individuals = new_indivs;
         self.generation += 1;
-        // TODO: Update state to "new_generation"
+
+        self.state = PopulationState::GenotypeCreated;
     }
 
     pub fn get_stats(&self) -> Option<PopulationStats<G, P>> {
@@ -295,7 +311,7 @@ impl<G: Genotype, P: Phenotype> Population<G, P> {
 
         if let Some(max_fitness) = max {
             let avg_fitness = sum / (num as f32);
-            Some(PopulationStats { 
+            Some(PopulationStats {
                 max_fitness,
                 avg_fitness,
                 best_indiv: (*best_indiv.unwrap()).clone()
@@ -429,8 +445,10 @@ impl<G: Genotype, P: Phenotype> EvolutionaryAlgorithm<G, P> {
 
     fn next_individual(&mut self) -> Individual<G, P> {
         if (*self.selection).preserve_next() {
+            // Copy existing individual without changes to the next generation
             (*(*self.selection).select_from(&self.population)).clone()
         } else {
+            // Use selection, recombination and mutation to create new individual
             Individual::new(self.new_genotype())
         }
     }
