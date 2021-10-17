@@ -6,7 +6,7 @@ const Highcharts = require('highcharts');
 require('highcharts/modules/exporting')(Highcharts);
 
 export function CaGraph() {
-    const [numStepsPlotted, setNumStepsPlotted] = useState(0);
+    const [numStepsPlotted, setNumStepsPlotted] = useState(undefined);
     const [maxNumAlive, setMaxNumAlive] = useState(0);
     const [chart, setChart] = useState();
 
@@ -59,7 +59,7 @@ export function CaGraph() {
                 chart.destroy();
                 initChart();
 
-                setNumStepsPlotted(0);
+                setNumStepsPlotted(undefined);
                 setMaxNumAlive(0);
             }
         } else if (caControl.numSteps !== numStepsPlotted ) {

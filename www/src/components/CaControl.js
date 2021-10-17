@@ -48,12 +48,16 @@ async function wasmInit() {
 export function caControlReducer(state, action) {
     switch (action.type) {
         case 'initialize': return initialCaControlState;
-        case 'initialized': return {
+        case 'initializing': return {
             ca: action.ca,
             seed: action.seed,
-            numSteps: 0,
             autoRun: false,
         };
+        case 'initialized': return {
+            ...state,
+            numSteps: 0,
+            caStats: action.stats,
+        }
         case 'toggleAutoRun': return {
             ...state,
             autoRun: !state.autoRun,
@@ -61,7 +65,7 @@ export function caControlReducer(state, action) {
         case 'executedStep': return {
             ...state,
             numSteps: state.numSteps + 1,
-            caStats: action.stats
+            caStats: action.stats,
         };
         default:
             console.error('Unexpected action:', action.type);
@@ -191,23 +195,28 @@ export function CaControl({ seed }) {
         [caControlDispatch]
     );
 
+    // Multi-step initialization
     useEffect(() => {
         async function init() {
             const wasm = await wasmInit();
             const ca = new wasm.GameOfLife(caSettings.gridSize, caSettings.gridSize, caSettings.borderWraps);
             seedCa(ca);
             clearOnceAlive();
-            caControlDispatch({ type: 'initialized', ca, seed });
+            caControlDispatch({ type: 'initializing', ca, seed });
         }
 
         if (!caControl?.ca || caControl.seed !== seed) {
             init();
+        } else if (!caControl.caStats) {
+            const stats = updateCaStats();
+
+            caControlDispatch({ type: 'initialized', stats });
         } else {
             drawGrid();
             drawCells();
         }
     }, [
-        seed, caControl?.ca, caControl?.seed, caSettings, caControlDispatch,
+        seed, caControl?.ca, caControl?.seed, caControl?.caStats, caSettings, caControlDispatch,
         seedCa, clearOnceAlive, drawGrid, drawCells
     ]);
 
