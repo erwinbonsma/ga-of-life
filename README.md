@@ -4,7 +4,7 @@ A web application that lets you run a Genetic Algorithm (GA) to solve optimizati
 Conway's Game of Life, a Cellular Automaton (CA).
 
 I developed it purely for my own enjoyment and learning.
-It's my first project where I used Rust.
+It's the first project where I used Rust.
 I wanted to see how it can be used to build performant web apps.
 
 ![Evolving Life screenshot](images/EvolvingLife.png)
@@ -19,6 +19,12 @@ The cells in gray are currently not alive, but were alive at least once.
 You can experiment with the GA and see the resulting CA patterns [here](https://erwinbonsma.github.io/www/ga-of-life/).
 The [help page](https://erwinbonsma.github.io/www/ga-of-life/#/help) provides a bit more detail.
 
+## CA implementation
+
+In order to maximise performance, the Game of Life rules are implemented by performing bitwise operations.
+This is based on [Game of Life by rilden](https://www.lexaloffle.com/bbs/?pid=94115) implemented in
+[PICO-8](https://www.lexaloffle.com/pico-8.php).
+
 ## Technologies
 
 * HTML5/CSS
@@ -26,3 +32,11 @@ The [help page](https://erwinbonsma.github.io/www/ga-of-life/#/help) provides a 
 * [ReactJS](https://reactjs.org) + [React Bootstrap](https://react-bootstrap.github.io)
 * Rust
 * Web Assembly
+
+## License
+
+Evolving Life is licensed under a
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+
+You should have received a copy of the license along with this
+work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
