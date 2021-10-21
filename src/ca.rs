@@ -398,6 +398,8 @@ impl GameOfLife {
         }
     }
 
+    // The Game of Life rules are implemented by performing bitwise calculations. This is based on
+    // the Pico-8 implementation by rilden at: https://www.lexaloffle.com/bbs/?pid=94115
     pub fn step(&mut self) {
         let mut row_above = 0;
         let mut row_currn = 1;
